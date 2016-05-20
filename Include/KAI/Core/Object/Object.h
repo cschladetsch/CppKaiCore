@@ -6,10 +6,10 @@
 #include <KAI/Core/Type/Number.h>
 #include <KAI/Core/Type/Deref.h>
 
-#include "KAI/Core/Handle.h"
+#include "KAI/Core/Object/Handle.h"
 #include "KAI/Core/Base.h"
-#include "KAI/Core/Constness.h"
-#include "KAI/Core/ObjectConstructParams.h"
+#include "KAI/Core/Object/Constness.h"
+#include "KAI/Core/Object/ObjectConstructParams.h"
 #include <KAI/Core/BuiltinTypes/Dictionary.h>
 
 KAI_BEGIN

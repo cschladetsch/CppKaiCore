@@ -1,6 +1,6 @@
 #pragma once
 
-#include "KAI/Core/ConstStorage.h"
+#include "KAI/Core/Object/ConstStorage.h"
 
 KAI_BEGIN
 

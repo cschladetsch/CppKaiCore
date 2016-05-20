@@ -1,15 +1,15 @@
 #pragma once
 
-#include <KAI/Language/Tau/Tau.h>
 #include <KAI/Core/Type/Traits.h>
-#include "KAI/Core/Object.h"
-#include "KAI/Core/ClassBase.h"
-#include "KAI/Core/Label.h"
-#include "KAI/Core/ObjectConstructParams.h"
-#include "KAI/Core/GetStorageBase.h"
-#include "KAI/Core/Algorithm.h"
+#include "KAI/Core/Object/Object.h"
+#include "KAI/Core/Object/ClassBase.h"
+#include "KAI/Core/Object/Label.h"
+#include "KAI/Core/Object/ObjectConstructParams.h"
+#include "KAI/Core/Object/GetStorageBase.h"
+#include "KAI/Core/TriColor.h"
 #include "KAI/Core/Value.h"
 #include <KAI/Core/Type/Deref.h>
+#include <KAI/Core/Registry.h"
 
 KAI_BEGIN
 

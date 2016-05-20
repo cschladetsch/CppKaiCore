@@ -2,8 +2,8 @@
 
 #include <KAI/Core/Config/Base.h>
 #include <KAI/Core/BuiltinTypes/Stack.h>
+#include "KAI/Core/Object/Constness.h"
 #include "KAI/Core/CallableBase.h"
-#include "KAI/Core/Constness.h"
 
 KAI_BEGIN
 

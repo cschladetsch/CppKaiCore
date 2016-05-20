@@ -1,9 +1,9 @@
 #pragma once
 
 #include <KAI/Core/Type/Number.h>
-#include "KAI/Core/Label.h"
+#include "KAI/Core/Object/Label.h"
 #include "KAI/Core/BasePointer.h"
-#include "KAI/Core/MemberCreateParams.h"
+#include "KAI/Core/Object/MemberCreateParams.h"
 
 KAI_BEGIN
 
