@@ -4,10 +4,10 @@
 
 #include <KAI/Core/Config/Base.h>
 #include <KAI/Core/BuiltinTypes/String.h>
-#include "Object.h"
-#include "StorageBase.h"
-#include "Base.h"
-#include "Handle.h"
+#include "KAI/Core/Object/Object.h"
+#include "KAI/Core/Object/StorageBase.h"
+#include "KAI/Core/Object/Handle.h"
+#include "KAI/Core/ObjectColor.h"
 
 KAI_BEGIN
 

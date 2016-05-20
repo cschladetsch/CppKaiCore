@@ -11,11 +11,9 @@
 #include <KAI/Language/Common/Structure.h>
 #include <KAI/Core/Exception/Extended.h>
 
-#include "KAI/KAI.h"
-
-#include "StringStream.h"
-#include "BinaryStream.h"
-#include "Debug.h"
+#include "KAI/Core/StringStream.h"
+#include "KAI/Core/BinaryStream.h"
+#include "KAI/Core/Debug.h"
 
 class Compiler;
 

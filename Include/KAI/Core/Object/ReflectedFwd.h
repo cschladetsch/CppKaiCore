@@ -1,5 +1,6 @@
 #pragma once
 
+#include <KAI/Core/ReflectedBase.h>
 #include "KAI/Core/Pointer.h"
 
 KAI_BEGIN

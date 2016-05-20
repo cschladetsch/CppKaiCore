@@ -1,8 +1,8 @@
 #pragma once
 
-#include "KAI/Core/StorageBase.h"
+#include "KAI/Core/Object/StorageBase.h"
 #include <KAI/Core/Type/Traits.h>
-#include "KAI/Core/ObjectConstructParams.h"
+#include "KAI/Core/Object/ObjectConstructParams.h"
 
 KAI_BEGIN
 

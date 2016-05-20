@@ -3,9 +3,9 @@
 #include <KAI/Core/Config/Base.h>
 #include <KAI/Core/Type/Number.h>
 #include <KAI/Core/Type/Deref.h>
-#include "KAI/Core/StorageBase.h"
-#include "KAI/Core/Object.h"
-#include "KAI/Core/Storage.h"
+#include "KAI/Core/Object/StorageBase.h"
+#include "KAI/Core/Object/Object.h"
+#include "KAI/Core/Object/Storage.h"
 
 KAI_BEGIN
 

@@ -9,16 +9,15 @@
 #include "KAI/Core/Base.h"
 #include "KAI/Core/Exception/ExceptionMacros.h"
 
-#include "KAI/Core/PropertyBase.h"
-#include "KAI/Core/MethodBase.h"
-#include "KAI/Core/Label.h"
+#include "KAI/Core/Object/PropertyBase.h"
+#include "KAI/Core/Object/MethodBase.h"
+#include "KAI/Core/Object/Label.h"
 #include "KAI/Core/StringStream.h"
 
 KAI_BEGIN
 
 class MethodBase;
 class PropertyBase;
-
 
 /// Base for all Class<T> types. ClassBase defines the type-independent 
 /// interface that all Class<T>s must define

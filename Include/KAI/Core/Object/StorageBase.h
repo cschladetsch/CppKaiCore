@@ -2,9 +2,9 @@
 
 #include <list>
 
-#include "KAI/Core/Handle.h"
-#include "KAI/Core/Label.h"
-#include "KAI/Core/Object.h"
+#include "KAI/Core/Object/Handle.h"
+#include "KAI/Core/Object/Label.h"
+#include "KAI/Core/Object/Object.h"
 #include "KAI/Core/BuiltinTypes/Dictionary.h"
 
 KAI_BEGIN
