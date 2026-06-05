@@ -156,6 +156,7 @@ const char *Operation::ToString(int value) {
         CASE(UnnnamedOp)
         CASE(ShellCommand)
         CASE(ToStringOp)
+        CASE(Abs)
     }
 
     return "UnnnamedOp";

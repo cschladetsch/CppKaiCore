@@ -176,6 +176,8 @@ struct Operation {
         UnnnamedOp,
         ShellCommand,  // Execute shell command and push result
         ToStringOp,    // Convert top of stack to string
+        Abs,           // Absolute value of the top numeric value
+                       // (added at end to preserve serialized op numbering)
     };
 
    private:

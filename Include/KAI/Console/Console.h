@@ -142,6 +142,17 @@ class Console : public Reflected {
     void SaveHistory() const;
     void AddToHistory(const std::string &command);
 
+    // Per-language persistent history file, e.g. ~/.kai/pi.history. Creates
+    // the ~/.kai directory if needed. The prompt's command number is derived
+    // from the number of entries in this file.
+    std::string HistoryFilePath() const;
+
+    // Interactive language switch: persists the current language's history,
+    // changes language, then loads the target language's history. Distinct
+    // from SetLanguage(), which is also used by the network thread for
+    // temporary per-message switches and must not touch history files.
+    void SwitchLanguageWithHistory(Language lang);
+
     // Network functionality
     bool StartNetworking(int listenPort = 14600);
     bool ConnectToPeer(const std::string &host, int port);

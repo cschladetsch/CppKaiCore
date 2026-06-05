@@ -2249,6 +2249,22 @@ void Executor::Perform(Operation::Type op) {
             break;
         }
 
+        case Operation::Abs: {
+            // Unary: replace the top numeric value with its absolute value.
+            Object A = Pop();
+            if (A.IsType<int>()) {
+                int value = ConstDeref<int>(A);
+                Push(New<int>(value < 0 ? -value : value));
+            } else if (A.IsType<float>()) {
+                float value = ConstDeref<float>(A);
+                Push(New<float>(value < 0.0f ? -value : value));
+            } else {
+                // abs is only defined for numbers; leave other types unchanged.
+                Push(A);
+            }
+            break;
+        }
+
         case Operation::Return: {
             KAI_TRACE() << "Return operation";
 

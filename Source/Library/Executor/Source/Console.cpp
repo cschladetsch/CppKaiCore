@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -1274,21 +1275,24 @@ String Console::Process(const String &text) {
 }
 
 void Console::WritePrompt(ostream &out) const {
-    // Use colorful prompt with the language symbol
+    // Every prompt is "[#] <symbol>", where # is the next command number drawn
+    // from the active language's persistent history (~/.kai/{pi,rho}.history).
+    const size_t commandNumber = commandHistory.size() + 1;
+
+    // '$' in shell mode, otherwise the language symbol.
+    const char *symbol;
     if (shellMode) {
-        // Bash/shell mode prompt: command number then "$", e.g. "[12] $ "
-        out << rang::style::bold << rang::fg::magenta
-            << "[" << (commandHistory.size() + 1) << "] "
-            << rang::fg::yellow << "$ " << rang::fg::reset
-            << rang::style::bold;
+        symbol = "$ ";
     } else {
-        // Language-specific prompt symbol only (no language name)
         auto lang = static_cast<Language>(compiler->GetLanguage());
-        const char* sym = (lang == Language::Rho) ? "ρ " :
-                          (lang == Language::Pi)  ? "π " : "λ ";
-        out << rang::style::bold << rang::fg::yellow << sym
-            << rang::fg::reset << rang::style::bold;
+        symbol = (lang == Language::Rho) ? "ρ " :
+                 (lang == Language::Pi)  ? "π " : "λ ";
     }
+
+    out << rang::style::bold << rang::fg::magenta
+        << "[" << commandNumber << "] "
+        << rang::fg::yellow << symbol << rang::fg::reset
+        << rang::style::bold;
     out.flush();  // Ensure prompt is displayed immediately
 }
 
@@ -1384,6 +1388,11 @@ String Console::WriteStackForPeer(const std::string &peerId) const {
 }
 
 int Console::Run() {
+    // Load the active language's history so the prompt's command number is
+    // correct from the first prompt, even when the startup language was set
+    // after construction (e.g. via the -l option).
+    LoadHistory();
+
     // Enable bold formatting at the start and maintain it
     cout << rang::style::bold;
     cout.flush();
@@ -1391,6 +1400,13 @@ int Console::Run() {
     for (;;) {
         KAI_TRY {
             for (;;) {
+                // Show the current stack before every prompt so results are
+                // visible without an explicit 'stack' command. Nothing is
+                // printed when the stack is empty.
+                if (executor.Exists() && executor->GetDataStack().Exists()) {
+                    ShowColoredStack();
+                }
+
                 // Always show prompt before input
                 WritePrompt(cout);
 
@@ -1540,14 +1556,10 @@ int Console::Run() {
 
                     // Check for language switch commands
                     if (text == "pi") {
-                        SetLanguage(Language::Pi);
-                        // Note: The main application should handle translator
-                        // switching For now, just set the language
+                        SwitchLanguageWithHistory(Language::Pi);
                         continue;
                     } else if (text == "rho") {
-                        SetLanguage(Language::Rho);
-                        // Note: The main application should handle translator
-                        // switching For now, just set the language
+                        SwitchLanguageWithHistory(Language::Rho);
                         continue;
                     }
 
@@ -1599,11 +1611,6 @@ int Console::Run() {
                         String output = Process(expandedText);
                         cout << output.c_str();
                     }
-                }
-
-                // Always show the stack after processing (unless it's empty)
-                if (executor.Exists() && executor->GetDataStack().Exists()) {
-                    ShowColoredStack();
                 }
 
                 if (end_) return endCode_;
@@ -1843,14 +1850,14 @@ bool Console::ProcessBuiltinCommand(const std::string &command) {
     }
 
     if (cmd == "pi") {
-        SetLanguage(Language::Pi);
+        SwitchLanguageWithHistory(Language::Pi);
         cout << rang::fg::green << "Switched to Pi language mode"
              << rang::fg::reset << "\n";
         return true;
     }
 
     if (cmd == "rho") {
-        SetLanguage(Language::Rho);
+        SwitchLanguageWithHistory(Language::Rho);
         cout << rang::fg::green << "Switched to Rho language mode"
              << rang::fg::reset << "\n";
         return true;
@@ -2031,14 +2038,22 @@ void Console::ShowBuiltinCommands() const {
 }
 
 // History Management Implementation
-void Console::LoadHistory() {
-    // Set history file path
+std::string Console::HistoryFilePath() const {
+    // History lives in ~/.kai, one file per language so the command number
+    // shown in the prompt is persistent and independent for Pi and Rho.
     const char *home = std::getenv("HOME");
-    if (home) {
-        historyFile = std::string(home) + "/.kai_history";
-    } else {
-        historyFile = ".kai_history";
-    }
+    std::string dir = home ? std::string(home) + "/.kai" : ".kai";
+
+    std::error_code ec;
+    std::filesystem::create_directories(dir, ec);  // best effort; ignore errors
+
+    const char *name = (language == Language::Rho) ? "rho" : "pi";
+    return dir + "/" + name + ".history";
+}
+
+void Console::LoadHistory() {
+    historyFile = HistoryFilePath();
+    commandHistory.clear();
 
     std::ifstream file(historyFile);
     if (!file.is_open()) {
@@ -2054,12 +2069,20 @@ void Console::LoadHistory() {
     file.close();
 }
 
-void Console::SaveHistory() const {
-    if (historyFile.empty()) {
-        return;
+void Console::SwitchLanguageWithHistory(Language lang) {
+    if (lang == language) {
+        return;  // already active; keep the loaded history as-is
     }
 
-    std::ofstream file(historyFile);
+    SaveHistory();      // persist the current language's history
+    SetLanguage(lang);  // change the active language (updates the compiler too)
+    LoadHistory();      // load the target language's persistent history
+}
+
+void Console::SaveHistory() const {
+    std::string path = historyFile.empty() ? HistoryFilePath() : historyFile;
+
+    std::ofstream file(path);
     if (!file.is_open()) {
         return;  // Can't save, but don't error
     }
