@@ -1274,21 +1274,20 @@ String Console::Process(const String &text) {
 }
 
 void Console::WritePrompt(ostream &out) const {
-    // Use colorful prompt with lambda symbol
+    // Use colorful prompt with the language symbol
     if (shellMode) {
-        // Shell mode prompt
-        out << rang::style::bold << rang::fg::green << "Bash"
-            << rang::fg::yellow << " λ " << rang::fg::reset
+        // Bash/shell mode prompt: command number then "$", e.g. "[12] $ "
+        out << rang::style::bold << rang::fg::magenta
+            << "[" << (commandHistory.size() + 1) << "] "
+            << rang::fg::yellow << "$ " << rang::fg::reset
             << rang::style::bold;
     } else {
-        // Language-specific prompt symbol
+        // Language-specific prompt symbol only (no language name)
         auto lang = static_cast<Language>(compiler->GetLanguage());
-        const char* sym = (lang == Language::Rho) ? " ρ " :
-                          (lang == Language::Pi)  ? " π " : " λ ";
-        out << rang::style::bold << rang::fg::cyan
-            << ToString(lang)
-            << rang::fg::yellow << sym << rang::fg::reset
-            << rang::style::bold;
+        const char* sym = (lang == Language::Rho) ? "ρ " :
+                          (lang == Language::Pi)  ? "π " : "λ ";
+        out << rang::style::bold << rang::fg::yellow << sym
+            << rang::fg::reset << rang::style::bold;
     }
     out.flush();  // Ensure prompt is displayed immediately
 }
