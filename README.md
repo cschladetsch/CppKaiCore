@@ -16,15 +16,15 @@ These form a dependency cycle, so they ship together as one module.
 
 ## Dependencies
 
-CommonLang's lexer uses `boost.monotonic` (an in-house, header-only library,
-also by the same author: CppMonotonic). When building standalone, point
-`KAI_MONOTONIC_INCLUDE_DIR` at those headers.
+None beyond a C++23 standard library. CommonLang's lexer can optionally use
+arena allocation via `std::pmr` (enable `-DKAI_USE_MONOTONIC_ALLOCATOR`);
+otherwise it uses plain `std::vector` / `std::map`.
 
 ## Building
 
 Standalone:
 
-    cmake -B build -DKAI_MONOTONIC_INCLUDE_DIR=/path/to/CppMonotonic
+    cmake -B build
     cmake --build build
 
 Or consume it from a parent project with `add_subdirectory(CppKaiCore)`, which

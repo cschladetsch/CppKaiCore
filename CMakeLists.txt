@@ -24,12 +24,8 @@ endif()
 set(CPPKAICORE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 set(CPPKAICORE_INCLUDE ${CPPKAICORE_ROOT}/Include)
 
-# boost.monotonic (in-house, header-only) is required by the Common lexer
-# (LexerCommon.h). When built inside CppKAI the parent puts it on the include
-# path already; for standalone/Android builds point this at the CppMonotonic
-# headers.
-set(KAI_MONOTONIC_INCLUDE_DIR "" CACHE PATH
-    "Path to the boost.monotonic (CppMonotonic) headers")
+# CommonLang's lexer can optionally use std::pmr arena allocation; enable it
+# with -DKAI_USE_MONOTONIC_ALLOCATOR. There are no third-party dependencies.
 
 # When built standalone (not as part of CppKAI), establish the compile
 # definitions the sources expect. Inside CppKAI these are set by the parent.
@@ -63,9 +59,6 @@ target_include_directories(CommonLang PUBLIC
     ${CPPKAICORE_INCLUDE}
     ${CPPKAICORE_INCLUDE}/KAI/Language/Common)
 target_link_libraries(CommonLang PUBLIC Core)
-if(KAI_MONOTONIC_INCLUDE_DIR)
-    target_include_directories(CommonLang PUBLIC ${KAI_MONOTONIC_INCLUDE_DIR})
-endif()
 
 # --- Executor ---------------------------------------------------------------
 # Console.cpp is excluded: it is parent-level glue that pulls in the Pi/Rho

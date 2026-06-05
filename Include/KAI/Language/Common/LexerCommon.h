@@ -6,10 +6,12 @@
 #include <stdarg.h>
 
 #include <algorithm>
+#include <map>
 #include <sstream>
+#include <vector>
 
 #ifdef KAI_USE_MONOTONIC_ALLOCATOR
-#include <boost/monotonic/monotonic.hpp>
+#include <memory_resource>
 #endif
 
 KAI_BEGIN
@@ -22,9 +24,11 @@ class LexerCommon : public LexerBase {
     typedef EnumType TokenEnumType;
 
 #ifdef KAI_USE_MONOTONIC_ALLOCATOR
-    typedef boost::monotonic::vector<Token> Tokens;
-    typedef boost::monotonic::vector<std::string> Lines;
-    typedef boost::monotonic::map<std::string, Token::Type> Keywords;
+    // Arena (monotonic) allocation via the standard library's PMR facilities,
+    // backed by arena_ (declared below). This replaces the former
+    // boost.monotonic containers, so KAI carries no Boost dependency.
+    typedef std::pmr::vector<Token> Tokens;
+    typedef std::pmr::map<std::string, Enum> Keywords;
 #else
     typedef std::vector<Token> Tokens;
     typedef std::map<std::string, Enum> Keywords;
@@ -45,8 +49,15 @@ class LexerCommon : public LexerBase {
     const Tokens &GetTokens() const { return tokens; }
 
    protected:
+#ifdef KAI_USE_MONOTONIC_ALLOCATOR
+    // The arena must outlive (be declared before) the containers it backs.
+    std::pmr::monotonic_buffer_resource arena_;
+    Tokens tokens{&arena_};
+    Keywords keyWords{&arena_};
+#else
     Tokens tokens;
     Keywords keyWords;
+#endif
     using LexerBase::reg_;
 
     bool Run() {
