@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -11,6 +12,7 @@
 #include <iostream>
 #include <random>
 #include <regex>
+#include <set>
 #include <sstream>
 #include <thread>
 
@@ -27,6 +29,7 @@
 #include "KAI/Core/Detail/Function.h"
 #include "KAI/Core/Memory/StandardAllocator.h"
 #include "KAI/Core/Object.h"
+#include "KAI/Core/Logger.h"
 #include "KAI/Executor/BinBase.h"
 #include "KAI/Network/Serialization.h"
 #include "rang.hpp"
@@ -78,6 +81,45 @@ class MultiLangTranslator : public TranslatorCommon {
 };
 
 namespace {
+std::string InspectorField(std::string value) {
+    std::string result;
+    result.reserve(value.size());
+    for (char c : value) {
+        if (c == '\\') result += "\\\\";
+        else if (c == '\t') result += "\\t";
+        else if (c == '\n' || c == '\r') result += "\\n";
+        else result += c;
+    }
+    return result;
+}
+
+void WriteInspectorNode(std::ostream &out, int executorHandle,
+                        const Object &node, int parentHandle, int depth,
+                        const std::string &label, const std::string &path,
+                        std::set<int> &seen, int &remaining) {
+    if (!node.Exists() || remaining <= 0 || depth > 32) return;
+    const int handle = node.GetHandle().GetValue();
+    if (!seen.insert(handle).second) return;
+    --remaining;
+
+    const std::string className = node.GetClass()
+                                      ? node.GetClass()->GetName().ToString().c_str()
+                                      : "?";
+    out << "NODE\t" << executorHandle << "\t" << handle << "\t"
+        << parentHandle << "\t" << depth << "\t"
+        << InspectorField(label) << "\t"
+        << InspectorField(className) << "\t"
+        << InspectorField(path) << "\n";
+
+    for (const auto &[childLabel, child] : node.GetDictionary()) {
+        const std::string name = childLabel.ToString().c_str();
+        const std::string childPath = path == "/" ? path + name
+                                                    : path + "/" + name;
+        WriteInspectorNode(out, executorHandle, child, handle, depth + 1,
+                           name, childPath, seen, remaining);
+    }
+}
+
 bool IsBareIdentifier(std::string_view text) {
     if (text.empty()) return false;
 
@@ -1275,10 +1317,6 @@ String Console::Process(const String &text) {
 }
 
 void Console::WritePrompt(ostream &out) const {
-    // Every prompt is "[#] <symbol>", where # is the next command number drawn
-    // from the active language's persistent history (~/.kai/{pi,rho}.history).
-    const size_t commandNumber = commandHistory.size() + 1;
-
     // '$' in shell mode, otherwise the language symbol.
     const char *symbol;
     if (shellMode) {
@@ -1289,10 +1327,7 @@ void Console::WritePrompt(ostream &out) const {
                  (lang == Language::Pi)  ? "π " : "λ ";
     }
 
-    out << rang::style::bold << rang::fg::magenta
-        << "[" << commandNumber << "] "
-        << rang::fg::yellow << symbol << rang::fg::reset
-        << rang::style::bold;
+    out << rang::style::bold << symbol << rang::fg::reset;
     out.flush();  // Ensure prompt is displayed immediately
 }
 
@@ -1313,16 +1348,14 @@ void Console::ShowColoredStack() const {
         return;  // Don't show anything for empty stack
     }
 
-    auto A = data->Begin(), B = data->End();
-    int N = 0;
-    for (N = data->Size() - 1; A != B; ++A, --N) {
-        // Colored output: [N] in bright yellow/orange, content in white/colored
-        // by type
-        cout << rang::fgB::yellow << "[" << N << "]: " << rang::fg::reset;
+    const auto &objects = data->GetStack();
+    int index = data->Size() - 1;
+    for (auto A = objects.rbegin(); A != objects.rend(); ++A, --index) {
+        cout << rang::fgB::yellow << "[" << index << "]: "
+             << rang::fg::reset;
 
         const bool is_string = A->GetTypeNumber() == Type::Number::String;
         const bool is_int = A->GetTypeNumber() == Type::Number::Signed32;
-        const bool is_float = A->GetTypeNumber() == Type::Number::Single;
 
         String objStr = A->ToString();
 
@@ -1331,8 +1364,6 @@ void Console::ShowColoredStack() const {
                  << rang::fg::reset;
         } else if (is_int) {
             cout << rang::fg::yellow << objStr.c_str() << rang::fg::reset;
-        } else if (is_float) {
-            cout << rang::fg::magenta << objStr.c_str() << rang::fg::reset;
         } else {
             cout << rang::fg::gray << objStr.c_str() << rang::fg::reset;
         }
@@ -1812,6 +1843,18 @@ bool Console::ProcessBuiltinCommand(const std::string &command) {
     std::string cmd = command;
     std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
 
+    if (cmd == "__nodeglm_tree__") {
+        ShowExecutorTrees();
+        return true;
+    }
+    std::smatch debugMatch;
+    if (std::regex_match(cmd, debugMatch,
+                         std::regex("^__nodeglm_debug__ ([0-9]+) "
+                                    "(step|continue|stack|clear)$"))) {
+        DebugExecutor(std::stoi(debugMatch[1].str()), debugMatch[2].str());
+        return true;
+    }
+
     if (cmd == "help" || cmd == "?") {
         ShowHelp();
         return true;
@@ -1819,7 +1862,7 @@ bool Console::ProcessBuiltinCommand(const std::string &command) {
 
     // Check for help with topic
     if (cmd.substr(0, 5) == "help ") {
-        std::string topic = command.substr(5);
+        std::string topic = cmd.substr(5);
         ShowHelp(topic);
         return true;
     }
@@ -1866,6 +1909,86 @@ bool Console::ProcessBuiltinCommand(const std::string &command) {
     return false;  // Not a built-in command
 }
 
+void Console::ShowExecutorTrees() const {
+    Logger::Info("Executor tree snapshot requested");
+    cout << "NODEGLM_TREE_BEGIN\n";
+    int executorCount = 0;
+    try {
+        for (const auto &[handle, storage] : reg_->GetInstances()) {
+            (void)storage;
+            Object object = reg_->GetObject(handle);
+            if (!object.IsType<Executor>()) continue;
+            ++executorCount;
+
+            Pointer<Executor> exec = object;
+            Tree *execTree = exec->GetTree();
+            const int executorHandle = handle.GetValue();
+            Object root = execTree ? execTree->GetRoot() : Object();
+            Object scope = execTree ? execTree->GetScope() : Object();
+            Value<Stack> data = exec->GetDataStack();
+            Value<Stack> context = exec->GetContextStack();
+            cout << "EXEC\t" << executorHandle << "\t"
+                 << reinterpret_cast<uintptr_t>(execTree) << "\t"
+                 << (root.Exists() ? root.GetHandle().GetValue() : -1) << "\t"
+                 << (scope.Exists() ? scope.GetHandle().GetValue() : -1) << "\t"
+                 << (data.Exists() ? data->Size() : 0) << "\t"
+                 << (context.Exists() ? context->Size() : 0) << "\t"
+                 << (scope.Exists()
+                         ? InspectorField(GetFullname(scope).ToString().c_str())
+                         : std::string())
+                 << "\n";
+
+            if (root.Exists()) {
+                std::set<int> seen;
+                int remaining = 1000;
+                WriteInspectorNode(cout, executorHandle, root, -1, 0, "/",
+                                   "/", seen, remaining);
+            }
+        }
+    } catch (const Exception::Base &error) {
+        Logger::Error("Executor tree snapshot failed: " +
+                      std::string(error.ToString().c_str()));
+    } catch (const std::exception &error) {
+        Logger::Error("Executor tree snapshot failed: " +
+                      std::string(error.what()));
+    }
+    cout << "NODEGLM_TREE_END\n";
+    Logger::Info("Executor tree snapshot completed: " +
+                 std::to_string(executorCount) + " executor(s)");
+}
+
+void Console::DebugExecutor(int handle, const std::string &action) {
+    if (!reg_->ContainsHandle(Handle(handle))) {
+        Logger::Error("Debug attach failed; Executor " +
+                      std::to_string(handle) + " is unavailable");
+        cout << "Executor " << handle << " is not available\n";
+        return;
+    }
+    Object object = reg_->GetObject(Handle(handle));
+    if (!object.IsType<Executor>()) {
+        Logger::Error("Debug attach failed; Executor " +
+                      std::to_string(handle) + " is unavailable");
+        cout << "Executor " << handle << " is not available\n";
+        return;
+    }
+    Logger::Info("Debug action '" + action + "' attached to Executor " +
+                 std::to_string(handle));
+    Pointer<Executor> exec = object;
+    if (action == "step") {
+        exec->ContinueOneInstruction();
+        cout << "Stepped Executor " << handle << "\n";
+    } else if (action == "continue") {
+        exec->Continue();
+        cout << "Continued Executor " << handle << "\n";
+    } else if (action == "clear") {
+        exec->ClearStacks();
+        cout << "Cleared Executor " << handle << " stacks\n";
+    } else if (action == "stack") {
+        cout << "Executor " << handle << " data stack:\n"
+             << WriteStackForExecutor(exec).c_str();
+    }
+}
+
 void Console::ShowHelp(const std::string &topic) const {
     if (topic.empty()) {
         cout << rang::style::bold << "KAI Console Help" << rang::style::reset
@@ -1875,6 +1998,8 @@ void Console::ShowHelp(const std::string &topic) const {
              << "- Basic usage and commands\n"
              << rang::fg::cyan << "  help history    " << rang::fg::reset
              << "- History and command expansion\n"
+             << rang::fg::cyan << "  help stack      " << rang::fg::reset
+             << "- Inspect and manipulate the data stack\n"
              << rang::fg::cyan << "  help shell      " << rang::fg::reset
              << "- Shell integration\n"
              << rang::fg::cyan << "  help languages  " << rang::fg::reset
@@ -1891,6 +2016,24 @@ void Console::ShowHelp(const std::string &topic) const {
         ShowBasicHelp();
     } else if (topic == "history") {
         ShowHistoryHelp();
+    } else if (topic == "stack") {
+        cout << rang::style::bold << "Data Stack Help" << rang::style::reset
+             << "\n\n"
+             << rang::fg::cyan << "Inspection:" << rang::fg::reset << "\n"
+             << rang::fg::green << "  stack           " << rang::fg::reset
+             << "# Display the current data stack\n\n"
+             << rang::fg::cyan << "Pi stack operations:" << rang::fg::reset
+             << "\n"
+             << rang::fg::green << "  dup             " << rang::fg::reset
+             << "# Duplicate the top value: a -> a a\n"
+             << rang::fg::green << "  swap            " << rang::fg::reset
+             << "# Exchange the top two values: a b -> b a\n"
+             << rang::fg::green << "  drop            " << rang::fg::reset
+             << "# Remove the top value: a b -> a\n"
+             << rang::fg::green << "  over            " << rang::fg::reset
+             << "# Copy the second value: a b -> a b a\n"
+             << rang::fg::green << "  rot             " << rang::fg::reset
+             << "# Rotate the top three values: a b c -> b c a\n";
     } else if (topic == "shell") {
         cout << rang::style::bold << "Shell Integration Help"
              << rang::style::reset << "\n\n"
