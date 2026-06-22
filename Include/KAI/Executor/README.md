@@ -443,6 +443,15 @@ class Executor {
 
 The Executor provides comprehensive error handling and debugging capabilities:
 
+### Multiple Executors and Tree Attachment
+
+Executors are reflected Registry objects with stable `Handle` identities. More
+than one Executor may be live in a Registry, and each Executor independently
+stores a `Tree*` via `SetTree()` and `GetTree()`. Debuggers and Tree viewers must
+enumerate and select an Executor explicitly before inspecting its stacks, scope,
+continuation state, or Tree. A Console-level Tree is not a substitute for the
+selected Executor's Tree.
+
 ### Exception Handling
 ```cpp
 class ExecutorException : public std::exception {
@@ -591,17 +600,14 @@ The Executor provides extensive debugging capabilities:
 
 ### Interactive Debugging
 ```cpp
-// Enable debug mode
-executor->SetDebugMode(true);
-
-// Step through execution
-executor->StepInto();   // Execute one operation
-executor->StepOver();   // Execute until next statement
-executor->Continue();   // Resume normal execution
+// Execute one instruction or continue the selected Executor.
+executor->ContinueOneInstruction();
+executor->Continue();
 
 // Inspect state
 auto stack_contents = executor->GetDataStack();
 auto call_stack = executor->GetContextStack();
+auto tree = executor->GetTree();
 ```
 
 ### Performance Profiling
