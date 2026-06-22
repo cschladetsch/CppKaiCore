@@ -20,6 +20,7 @@
 #include "KAI/Language/Rho/RhoTranslator.h"
 
 #ifdef __linux__
+#include <poll.h>
 #include <termios.h>
 #include <unistd.h>
 #endif
@@ -81,22 +82,52 @@ class MultiLangTranslator : public TranslatorCommon {
 };
 
 namespace {
-std::string InspectorField(std::string value) {
+std::string JsonField(std::string value) {
     std::string result;
     result.reserve(value.size());
     for (char c : value) {
         if (c == '\\') result += "\\\\";
+        else if (c == '"') result += "\\\"";
         else if (c == '\t') result += "\\t";
-        else if (c == '\n' || c == '\r') result += "\\n";
+        else if (c == '\n') result += "\\n";
+        else if (c == '\r') result += "\\r";
+        else if (static_cast<unsigned char>(c) < 0x20) result += "?";
         else result += c;
     }
     return result;
 }
 
-void WriteInspectorNode(std::ostream &out, int executorHandle,
-                        const Object &node, int parentHandle, int depth,
+bool WriteControlResponse(const std::string &response) {
+#ifdef __linux__
+    const char *value = std::getenv("KAI_CONTROL_FD");
+    if (!value || !*value) {
+        Logger::Error("KAI control response requested without KAI_CONTROL_FD");
+        return false;
+    }
+    const int fd = std::atoi(value);
+    const std::string line = response + "\n";
+    size_t offset = 0;
+    while (offset < line.size()) {
+        const ssize_t count = ::write(fd, line.data() + offset,
+                                      line.size() - offset);
+        if (count <= 0) {
+            Logger::Error("Failed writing KAI control response");
+            return false;
+        }
+        offset += static_cast<size_t>(count);
+    }
+    return true;
+#else
+    (void)response;
+    Logger::Error("KAI control channel is not implemented on this platform");
+    return false;
+#endif
+}
+
+void WriteInspectorNode(std::ostream &out, const Object &node,
+                        int parentHandle, int depth,
                         const std::string &label, const std::string &path,
-                        std::set<int> &seen, int &remaining) {
+                        std::set<int> &seen, int &remaining, bool &first) {
     if (!node.Exists() || remaining <= 0 || depth > 32) return;
     const int handle = node.GetHandle().GetValue();
     if (!seen.insert(handle).second) return;
@@ -105,18 +136,19 @@ void WriteInspectorNode(std::ostream &out, int executorHandle,
     const std::string className = node.GetClass()
                                       ? node.GetClass()->GetName().ToString().c_str()
                                       : "?";
-    out << "NODE\t" << executorHandle << "\t" << handle << "\t"
-        << parentHandle << "\t" << depth << "\t"
-        << InspectorField(label) << "\t"
-        << InspectorField(className) << "\t"
-        << InspectorField(path) << "\n";
+    if (!first) out << ',';
+    first = false;
+    out << "{\"id\":\"" << handle << "\",\"parentId\":\""
+        << parentHandle << "\",\"depth\":" << depth << ",\"label\":\""
+        << JsonField(label) << "\",\"type\":\"" << JsonField(className)
+        << "\",\"path\":\"" << JsonField(path) << "\"}";
 
     for (const auto &[childLabel, child] : node.GetDictionary()) {
         const std::string name = childLabel.ToString().c_str();
         const std::string childPath = path == "/" ? path + name
                                                     : path + "/" + name;
-        WriteInspectorNode(out, executorHandle, child, handle, depth + 1,
-                           name, childPath, seen, remaining);
+        WriteInspectorNode(out, child, handle, depth + 1, name, childPath,
+                           seen, remaining, first);
     }
 }
 
@@ -270,22 +302,51 @@ String Console::ReadLineWithDynamicColor() {
 #ifdef __linux__
     // Save current terminal settings
     struct termios old_settings, new_settings;
-    tcgetattr(STDIN_FILENO, &old_settings);
-    new_settings = old_settings;
-
-    // Set terminal to raw mode
-    new_settings.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &new_settings);
+    const bool interactive = isatty(STDIN_FILENO) &&
+                             tcgetattr(STDIN_FILENO, &old_settings) == 0;
+    if (interactive) {
+        new_settings = old_settings;
+        new_settings.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &new_settings);
+    }
 
     string line;
+    string controlLine;
     bool isShellCommand = false;
+    const char *controlValue = std::getenv("KAI_CONTROL_FD");
+    const int controlFd = controlValue && *controlValue
+                              ? std::atoi(controlValue)
+                              : -1;
     char ch;
 
     while (true) {
+        struct pollfd fds[2] = {{STDIN_FILENO, POLLIN, 0},
+                                {controlFd, POLLIN, 0}};
+        const nfds_t count = controlFd >= 0 ? 2 : 1;
+        if (poll(fds, count, -1) < 0) continue;
+        if (controlFd >= 0 && (fds[1].revents & POLLIN)) {
+            char controlChar;
+            const ssize_t controlCount = read(controlFd, &controlChar, 1);
+            if (controlCount == 1) {
+                if (controlChar == '\n') {
+                    if (controlLine.rfind("__nodeglm_", 0) == 0) {
+                        ProcessBuiltinCommand(controlLine);
+                    } else if (!controlLine.empty()) {
+                        Logger::Error("Rejected invalid KAI control request");
+                    }
+                    controlLine.clear();
+                } else if (controlChar != '\r' && controlLine.size() < 1024) {
+                    controlLine += controlChar;
+                }
+            }
+            continue;
+        }
+        if (!(fds[0].revents & (POLLIN | POLLHUP))) continue;
         const ssize_t readCount = read(STDIN_FILENO, &ch, 1);
         if (readCount == 0) {
             // EOF on stdin (e.g., piped input). Exit cleanly.
-            tcsetattr(STDIN_FILENO, TCSANOW, &old_settings);
+            if (interactive)
+                tcsetattr(STDIN_FILENO, TCSANOW, &old_settings);
             cout << rang::fg::reset;
             end_ = true;
             return String(line);
@@ -317,7 +378,8 @@ String Console::ReadLineWithDynamicColor() {
                 }
             } else if (ch == 3) {  // Ctrl-C
                 // Restore terminal settings
-                tcsetattr(STDIN_FILENO, TCSANOW, &old_settings);
+                if (interactive)
+                    tcsetattr(STDIN_FILENO, TCSANOW, &old_settings);
                 cout << rang::fg::reset << endl;
                 throw std::runtime_error("Interrupted");
             } else if (ch == 12) {  // Ctrl-L
@@ -346,7 +408,7 @@ String Console::ReadLineWithDynamicColor() {
     }
 
     // Restore terminal settings
-    tcsetattr(STDIN_FILENO, TCSANOW, &old_settings);
+    if (interactive) tcsetattr(STDIN_FILENO, TCSANOW, &old_settings);
     cout << rang::fg::reset;
 
     return String(line);
@@ -1839,21 +1901,26 @@ std::string Console::ExtractFilePath(const std::string &text) {
 
 // Help System Implementation
 bool Console::ProcessBuiltinCommand(const std::string &command) {
-    // Convert to lowercase for case-insensitive matching
-    std::string cmd = command;
-    std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
-
-    if (cmd == "__nodeglm_tree__") {
-        ShowExecutorTrees();
+    std::smatch treeMatch;
+    if (std::regex_match(command, treeMatch,
+                         std::regex("^__nodeglm_tree__ "
+                                    "([A-Za-z0-9._-]{1,128})$"))) {
+        ShowExecutorTrees(treeMatch[1].str());
         return true;
     }
     std::smatch debugMatch;
-    if (std::regex_match(cmd, debugMatch,
-                         std::regex("^__nodeglm_debug__ ([0-9]+) "
+    if (std::regex_match(command, debugMatch,
+                         std::regex("^__nodeglm_debug__ "
+                                    "([A-Za-z0-9._-]{1,128}) ([0-9]+) "
                                     "(step|continue|stack|clear)$"))) {
-        DebugExecutor(std::stoi(debugMatch[1].str()), debugMatch[2].str());
+        DebugExecutor(debugMatch[1].str(), std::stoi(debugMatch[2].str()),
+                      debugMatch[3].str());
         return true;
     }
+
+    // Convert user-facing built-ins to lowercase for case-insensitive matching.
+    std::string cmd = command;
+    std::transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
 
     if (cmd == "help" || cmd == "?") {
         ShowHelp();
@@ -1909,10 +1976,13 @@ bool Console::ProcessBuiltinCommand(const std::string &command) {
     return false;  // Not a built-in command
 }
 
-void Console::ShowExecutorTrees() const {
+void Console::ShowExecutorTrees(const std::string &requestId) const {
     Logger::Info("Executor tree snapshot requested");
-    cout << "NODEGLM_TREE_BEGIN\n";
     int executorCount = 0;
+    std::ostringstream response;
+    response << "{\"id\":\"" << JsonField(requestId)
+             << "\",\"type\":\"tree\",\"ok\":true,\"executors\":[";
+    bool firstExecutor = true;
     try {
         for (const auto &[handle, storage] : reg_->GetInstances()) {
             (void)storage;
@@ -1927,65 +1997,106 @@ void Console::ShowExecutorTrees() const {
             Object scope = execTree ? execTree->GetScope() : Object();
             Value<Stack> data = exec->GetDataStack();
             Value<Stack> context = exec->GetContextStack();
-            cout << "EXEC\t" << executorHandle << "\t"
-                 << reinterpret_cast<uintptr_t>(execTree) << "\t"
-                 << (root.Exists() ? root.GetHandle().GetValue() : -1) << "\t"
-                 << (scope.Exists() ? scope.GetHandle().GetValue() : -1) << "\t"
-                 << (data.Exists() ? data->Size() : 0) << "\t"
-                 << (context.Exists() ? context->Size() : 0) << "\t"
-                 << (scope.Exists()
-                         ? InspectorField(GetFullname(scope).ToString().c_str())
-                         : std::string())
-                 << "\n";
+            if (!firstExecutor) response << ',';
+            firstExecutor = false;
+            response << "{\"id\":\"" << executorHandle
+                     << "\",\"treeId\":\"executor:" << executorHandle
+                     << "\",\"rootId\":\""
+                     << (root.Exists() ? root.GetHandle().GetValue() : -1)
+                     << "\",\"scopeId\":\""
+                     << (scope.Exists() ? scope.GetHandle().GetValue() : -1)
+                     << "\",\"dataSize\":"
+                     << (data.Exists() ? data->Size() : 0)
+                     << ",\"contextSize\":"
+                     << (context.Exists() ? context->Size() : 0)
+                     << ",\"scope\":\""
+                     << JsonField(scope.Exists()
+                                      ? GetFullname(scope).ToString().c_str()
+                                      : std::string())
+                     << "\",\"nodes\":[";
 
+            bool firstNode = true;
             if (root.Exists()) {
                 std::set<int> seen;
                 int remaining = 1000;
-                WriteInspectorNode(cout, executorHandle, root, -1, 0, "/",
-                                   "/", seen, remaining);
+                WriteInspectorNode(response, root, -1, 0, "/", "/", seen,
+                                   remaining, firstNode);
             }
+            response << "]}";
         }
     } catch (const Exception::Base &error) {
-        Logger::Error("Executor tree snapshot failed: " +
-                      std::string(error.ToString().c_str()));
+        const std::string message = error.ToString().c_str();
+        Logger::Error("Executor tree snapshot failed: " + message);
+        WriteControlResponse("{\"id\":\"" + JsonField(requestId) +
+                             "\",\"type\":\"tree\",\"ok\":false,"
+                             "\"error\":\"" + JsonField(message) + "\"}");
+        return;
     } catch (const std::exception &error) {
-        Logger::Error("Executor tree snapshot failed: " +
-                      std::string(error.what()));
+        const std::string message = error.what();
+        Logger::Error("Executor tree snapshot failed: " + message);
+        WriteControlResponse("{\"id\":\"" + JsonField(requestId) +
+                             "\",\"type\":\"tree\",\"ok\":false,"
+                             "\"error\":\"" + JsonField(message) + "\"}");
+        return;
     }
-    cout << "NODEGLM_TREE_END\n";
+    response << "]}";
+    WriteControlResponse(response.str());
     Logger::Info("Executor tree snapshot completed: " +
                  std::to_string(executorCount) + " executor(s)");
 }
 
-void Console::DebugExecutor(int handle, const std::string &action) {
+void Console::DebugExecutor(const std::string &requestId, int handle,
+                            const std::string &action) {
+    const auto failure = [&](const std::string &message) {
+        Logger::Error(message);
+        WriteControlResponse("{\"id\":\"" + JsonField(requestId) +
+                             "\",\"type\":\"debug\",\"ok\":false,"
+                             "\"executorId\":\"" +
+                             std::to_string(handle) + "\",\"action\":\"" +
+                             JsonField(action) + "\",\"error\":\"" +
+                             JsonField(message) + "\"}");
+    };
     if (!reg_->ContainsHandle(Handle(handle))) {
-        Logger::Error("Debug attach failed; Executor " +
-                      std::to_string(handle) + " is unavailable");
-        cout << "Executor " << handle << " is not available\n";
+        failure("Executor " + std::to_string(handle) + " is not available");
         return;
     }
     Object object = reg_->GetObject(Handle(handle));
     if (!object.IsType<Executor>()) {
-        Logger::Error("Debug attach failed; Executor " +
-                      std::to_string(handle) + " is unavailable");
-        cout << "Executor " << handle << " is not available\n";
+        failure("Executor " + std::to_string(handle) + " is not available");
         return;
     }
-    Logger::Info("Debug action '" + action + "' attached to Executor " +
-                 std::to_string(handle));
-    Pointer<Executor> exec = object;
-    if (action == "step") {
-        exec->ContinueOneInstruction();
-        cout << "Stepped Executor " << handle << "\n";
-    } else if (action == "continue") {
-        exec->Continue();
-        cout << "Continued Executor " << handle << "\n";
-    } else if (action == "clear") {
-        exec->ClearStacks();
-        cout << "Cleared Executor " << handle << " stacks\n";
-    } else if (action == "stack") {
-        cout << "Executor " << handle << " data stack:\n"
-             << WriteStackForExecutor(exec).c_str();
+    try {
+        Logger::Info("Debug action '" + action + "' attached to Executor " +
+                     std::to_string(handle));
+        Pointer<Executor> exec = object;
+        std::string message;
+        std::string stack;
+        if (action == "step") {
+            exec->ContinueOneInstruction();
+            message = "Stepped Executor " + std::to_string(handle);
+        } else if (action == "continue") {
+            exec->Continue();
+            message = "Continued Executor " + std::to_string(handle);
+        } else if (action == "clear") {
+            exec->ClearStacks();
+            message =
+                "Cleared Executor " + std::to_string(handle) + " stacks";
+        } else if (action == "stack") {
+            message = "Executor " + std::to_string(handle) + " data stack:";
+            stack = WriteStackForExecutor(exec).c_str();
+        }
+        WriteControlResponse("{\"id\":\"" + JsonField(requestId) +
+                             "\",\"type\":\"debug\",\"ok\":true,"
+                             "\"executorId\":\"" +
+                             std::to_string(handle) + "\",\"action\":\"" +
+                             JsonField(action) + "\",\"message\":\"" +
+                             JsonField(message) + "\",\"stack\":\"" +
+                             JsonField(stack) + "\"}");
+    } catch (const Exception::Base &error) {
+        failure("Debug action failed: " +
+                std::string(error.ToString().c_str()));
+    } catch (const std::exception &error) {
+        failure("Debug action failed: " + std::string(error.what()));
     }
 }
 
@@ -2242,8 +2353,8 @@ void Console::SaveHistory() const {
 }
 
 void Console::AddToHistory(const std::string &command) {
-    // Don't add empty commands or duplicates of the last command
-    if (command.empty() ||
+    // Control-channel commands are transport details, not user history.
+    if (command.rfind("__nodeglm_", 0) == 0 || command.empty() ||
         (!commandHistory.empty() && commandHistory.back() == command)) {
         return;
     }

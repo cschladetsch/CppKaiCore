@@ -135,8 +135,9 @@ class Console : public Reflected {
     void ShowHistoryHelp() const;
     void ShowLanguageHelp(const std::string &lang) const;
     void ShowBuiltinCommands() const;
-    void ShowExecutorTrees() const;
-    void DebugExecutor(int handle, const std::string &action);
+    void ShowExecutorTrees(const std::string &requestId) const;
+    void DebugExecutor(const std::string &requestId, int handle,
+                       const std::string &action);
     bool ProcessBuiltinCommand(const std::string &command);
 
     // History management
