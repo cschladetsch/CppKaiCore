@@ -329,7 +329,7 @@ String Console::ReadLineWithDynamicColor() {
             const ssize_t controlCount = read(controlFd, &controlChar, 1);
             if (controlCount == 1) {
                 if (controlChar == '\n') {
-                    if (controlLine.rfind("__nodeglm_", 0) == 0) {
+                    if (controlLine.rfind("__kai_", 0) == 0) {
                         ProcessBuiltinCommand(controlLine);
                     } else if (!controlLine.empty()) {
                         Logger::Error("Rejected invalid KAI control request");
@@ -1903,14 +1903,14 @@ std::string Console::ExtractFilePath(const std::string &text) {
 bool Console::ProcessBuiltinCommand(const std::string &command) {
     std::smatch treeMatch;
     if (std::regex_match(command, treeMatch,
-                         std::regex("^__nodeglm_tree__ "
+                         std::regex("^__kai_inspect_tree__ "
                                     "([A-Za-z0-9._-]{1,128})$"))) {
         ShowExecutorTrees(treeMatch[1].str());
         return true;
     }
     std::smatch debugMatch;
     if (std::regex_match(command, debugMatch,
-                         std::regex("^__nodeglm_debug__ "
+                         std::regex("^__kai_debug_action__ "
                                     "([A-Za-z0-9._-]{1,128}) ([0-9]+) "
                                     "(step|continue|stack|clear)$"))) {
         DebugExecutor(debugMatch[1].str(), std::stoi(debugMatch[2].str()),
@@ -2354,7 +2354,7 @@ void Console::SaveHistory() const {
 
 void Console::AddToHistory(const std::string &command) {
     // Control-channel commands are transport details, not user history.
-    if (command.rfind("__nodeglm_", 0) == 0 || command.empty() ||
+    if (command.rfind("__kai_", 0) == 0 || command.empty() ||
         (!commandHistory.empty() && commandHistory.back() == command)) {
         return;
     }
