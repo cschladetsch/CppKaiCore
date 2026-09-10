@@ -1391,10 +1391,7 @@ void Console::WritePrompt(ostream &out) const {
         else { symbol = "λ "; isLambda = true; }
     }
 
-    if (isLambda)
-        out << rang::fg::cyan << rang::style::bold << symbol << rang::fg::reset;
-    else
-        out << rang::style::bold << symbol << rang::fg::reset;
+	out << rang::fg::cyan << rang::style::bold << symbol << rang::fg::reset;
     out.flush();  // Ensure prompt is displayed immediately
 }
 
