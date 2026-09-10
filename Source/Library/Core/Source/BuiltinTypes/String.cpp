@@ -1,6 +1,7 @@
 #include <KAI/Core/Object/ClassBuilder.h>
 #include <KAI/Core/Type/Properties.h>
 
+#include <ostream>
 #include <algorithm>
 #include <cctype>
 

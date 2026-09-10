@@ -1381,15 +1381,20 @@ String Console::Process(const String &text) {
 void Console::WritePrompt(ostream &out) const {
     // '$' in shell mode, otherwise the language symbol.
     const char *symbol;
+    bool isLambda = false;
     if (shellMode) {
         symbol = "$ ";
     } else {
         auto lang = static_cast<Language>(compiler->GetLanguage());
-        symbol = (lang == Language::Rho) ? "ρ " :
-                 (lang == Language::Pi)  ? "π " : "λ ";
+        if (lang == Language::Rho)      symbol = "ρ ";
+        else if (lang == Language::Pi)  symbol = "π ";
+        else { symbol = "λ "; isLambda = true; }
     }
 
-    out << rang::style::bold << symbol << rang::fg::reset;
+    if (isLambda)
+        out << rang::fg::cyan << rang::style::bold << symbol << rang::fg::reset;
+    else
+        out << rang::style::bold << symbol << rang::fg::reset;
     out.flush();  // Ensure prompt is displayed immediately
 }
 

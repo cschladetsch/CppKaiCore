@@ -36,4 +36,6 @@
     class X;                            \
     KAI_PLATFORM_END
 
+#include <KAI/Platform/Platform.h>
+
 // EOF

@@ -43,6 +43,12 @@ if(NOT DEFINED KAI_HOME)
     endif()
 endif()
 
+# MSVC 2026 compatibility - force-include missing transitive headers
+if(MSVC)
+    set(KAI_COMPAT "${CPPKAICORE_INCLUDE}/KAI/Core/msvc_compat.h")
+    add_compile_options(/FI${KAI_COMPAT})
+endif()
+
 # --- Core -------------------------------------------------------------------
 file(GLOB_RECURSE cppkaicore_core_src
     ${CPPKAICORE_ROOT}/Source/Library/Core/Source/*.cpp)
