@@ -3,9 +3,9 @@
 #include <KAI/Language/Common/LexerBase.h>
 #include <KAI/Language/Common/KaiProcess.h>
 #include <KAI/Language/Common/Slice.h>
-#include <stdarg.h>
 
 #include <algorithm>
+#include <format>
 #include <map>
 #include <sstream>
 #include <vector>
@@ -142,25 +142,51 @@ class LexerCommon : public LexerBase {
     }
 
    public:
-    static std::string CreateErrorMessage(Token tok, const char *fmt, ...) {
-        char buff0[4096];
-        va_list ap;
-        va_start(ap, fmt);
-#ifdef WIN32
-        vsprintf_s(buff0, sizeof(buff0), fmt, ap);
-#else
-        vsnprintf(buff0, sizeof(buff0), fmt, ap);
-#endif
+    // Builds a "(line):[col]: message\n" diagnostic, optionally followed by
+    // source-line context. `fmt` uses std::format placeholders ("{}", not
+    // printf's "%s"/"%c"/"%d"); callers with no substitutions just pass a
+    // plain message and no extra args.
+    //
+    // `fmt` is a plain std::string_view rather than a compile-time-checked
+    // std::format_string, because some callers (e.g. LexError() below) only
+    // learn the format text at runtime, so it can't satisfy format_string's
+    // consteval requirement. That trades compile-time placeholder checking
+    // for the ability to accept those call sites uniformly - std::vformat
+    // still throws std::format_error at runtime on a malformed format
+    // string or an out-of-range argument reference.
+    template <typename... Args>
+    static std::string CreateErrorMessage(Token tok, std::string_view fmt,
+                                          Args &&...args) {
+        // Extra arguments the format string doesn't reference are simply
+        // unused (not an error) - LexError() below always passes Current()
+        // even for messages with no placeholder at all.
+        std::string message;
+        if constexpr (sizeof...(Args) > 0) {
+            // std::make_format_args wants lvalues (it stores references, not
+            // values, in the arg-store it returns) - pass the named
+            // parameter pack directly rather than std::forward-ing it, since
+            // forwarding would turn a by-value arg back into an rvalue that
+            // can't bind to make_format_args' `Args&...` parameters.
+            message = std::vformat(fmt, std::make_format_args(args...));
+        } else {
+            message = std::string(fmt);
+        }
 
-        const char *fmt1 = "%s(%d):[%d]: %s\n";
-        char buff[8192];
-#ifdef WIN32
-        sprintf_s(buff, sizeof(buff), fmt1, "", tok.lineNumber, tok.slice.Start,
-                  buff0);
-#else
-        snprintf(buff, sizeof(buff), fmt1, "", tok.lineNumber, tok.slice.Start,
-                 buff0);
-#endif
+        std::string buff = std::format("({}):[{}]: {}\n", tok.lineNumber,
+                                       tok.slice.Start, message);
+
+        // tok.lexer is null for a default-constructed/sentinel Token - e.g.
+        // ParserCommon's endToken_, returned by Current()/Consume()/etc. once
+        // parsing has run past the end of the token stream on malformed
+        // input. There's no source line to show for a token that doesn't
+        // belong to any lexer, so return the message we have instead of
+        // dereferencing a null pointer (this used to crash with an access
+        // violation once the vector-subscript-out-of-range bug that used to
+        // mask it was fixed).
+        if (tok.lexer == nullptr) {
+            return buff;
+        }
+
         int beforeContext = 2;
         int afterContext = 2;
 

@@ -1,5 +1,6 @@
 #include <KAI/Core/BuiltinTypes.h>
 #include <KAI/Core/Exception.h>
+#include <KAI/Core/PlatformShellCommand.h>
 #include <KAI/Core/Tree.h>
 #include <KAI/Executor/BinBase.h>
 #include <KAI/Executor/BinaryOperationHandler.h>
@@ -1387,8 +1388,17 @@ void Executor::Perform(Operation::Type op) {
                 if (cmdObj.IsType<String>()) {
                     String command = ConstDeref<String>(cmdObj);
 
-                    // Execute the command and capture output
-                    FILE* pipe = popen(command.c_str(), "r");
+                    // Execute the command and capture output. This is the
+                    // actual runtime path a backtick expression compiled out
+                    // of a Pi/Rho script takes - it must go through
+                    // KAI_POPEN/ToPlatformShellCommand (see
+                    // KAI/Core/PlatformShellCommand.h) exactly like
+                    // Console.cpp's REPL-level shell handling does, or a
+                    // POSIX-only command (printf, pwd, etc.) silently runs
+                    // via cmd.exe on native Windows and fails there instead.
+                    FILE* pipe = KAI_POPEN(
+                        ToPlatformShellCommand(command.StdString()).c_str(),
+                        "r");
                     if (pipe) {
                         char buffer[1024];
                         std::string result;
@@ -1398,7 +1408,7 @@ void Executor::Perform(Operation::Type op) {
                             result += buffer;
                         }
 
-                        int status = pclose(pipe);
+                        int status = KAI_PCLOSE(pipe);
 
                         // Check if command execution failed
                         if (status != 0) {

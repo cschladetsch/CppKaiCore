@@ -31,9 +31,22 @@
 #include "KAI/Core/Memory/StandardAllocator.h"
 #include "KAI/Core/Object.h"
 #include "KAI/Core/Logger.h"
+#include "KAI/Core/PlatformShellCommand.h"
 #include "KAI/Executor/BinBase.h"
 #include "KAI/Network/Serialization.h"
 #include "rang.hpp"
+
+// KAI_POPEN/KAI_PCLOSE/ToPlatformShellCommand() (used below by
+// ExecuteShellCommandWithColor/ProcessShellCommand/ExpandShellCommands) come
+// from KAI/Core/PlatformShellCommand.h, included above. It used to be
+// defined only in this file, in an anonymous namespace invisible to other
+// translation units - which is exactly why ExecutorPerform.cpp's separate,
+// unwrapped `popen()` call for the Operation::ShellCommand VM opcode (the
+// actual runtime path a compiled Pi/Rho script's backtick expressions take)
+// kept spawning cmd.exe directly and failing on POSIX-only commands like
+// `printf`/`pwd`, even after this file switched to the WSL2-wrapped
+// version. Sharing one header means there's now exactly one place that
+// decides how a backtick command reaches a real shell.
 
 using namespace std;
 
@@ -418,6 +431,21 @@ String Console::ReadLineWithDynamicColor() {
     cout << rang::fg::gray;
     getline(cin, line);
     cout << rang::fg::reset;
+
+    // getline() clears `line` and sets failbit/eofbit when stdin runs out
+    // (e.g. piped input reaching its end, or Ctrl-Z+Enter at an interactive
+    // prompt) - without checking for that here, Run()'s REPL loop below has
+    // no way to know input is exhausted. It would just call this function
+    // again, which returns instantly (the stream is still in a failed
+    // state, so getline no longer blocks), producing an empty string every
+    // time - so the loop spins printing a fresh prompt as fast as it can
+    // instead of exiting, which looks like a hang/runaway rather than a
+    // clean shutdown. Set `end_` here exactly like the Linux/poll-based
+    // path above already does on EOF, so Run() actually returns.
+    if (!cin) {
+        end_ = true;
+    }
+
     return String(line);
 #endif
 }
@@ -466,14 +494,14 @@ void Console::ExecuteShellCommandWithColor(const std::string &command) {
     fullCommand += colorCommand;
 
     // Execute the command
-    FILE *pipe = popen(fullCommand.c_str(), "r");
+    FILE *pipe = KAI_POPEN(ToPlatformShellCommand(fullCommand).c_str(), "r");
     if (pipe) {
         // Use larger buffer to handle ANSI escape sequences properly
         char buffer[4096];
         while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
             cout << buffer;
         }
-        int exitCode = pclose(pipe);
+        int exitCode = KAI_PCLOSE(pipe);
         if (exitCode != 0) {
             cout << rang::fg::red << "Command exited with code: " << exitCode
                  << rang::fg::reset << endl;
@@ -731,7 +759,7 @@ String Console::ProcessShellCommand(const String &text) {
     commandStd = commandStd.substr(start, end - start + 1);
 
     // Use popen to execute the command and capture output
-    FILE *pipe = popen(commandStd.c_str(), "r");
+    FILE *pipe = KAI_POPEN(ToPlatformShellCommand(commandStd).c_str(), "r");
     if (!pipe) {
         return String("Error: Failed to execute shell command\n");
     }
@@ -742,7 +770,7 @@ String Console::ProcessShellCommand(const String &text) {
         result += buffer;
     }
 
-    int returnCode = pclose(pipe);
+    int returnCode = KAI_PCLOSE(pipe);
     if (returnCode != 0) {
         result +=
             "\nCommand exited with code: " + std::to_string(returnCode) + "\n";
@@ -761,14 +789,14 @@ String Console::ExpandShellCommands(const String &text) {
         std::string command = match[1].str();
 
         // Execute the command
-        FILE *pipe = popen(command.c_str(), "r");
+        FILE *pipe = KAI_POPEN(ToPlatformShellCommand(command).c_str(), "r");
         std::string output;
         if (pipe) {
             char buffer[128];
             while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
                 output += buffer;
             }
-            pclose(pipe);
+            KAI_PCLOSE(pipe);
 
             // Remove trailing newline if present
             if (!output.empty() && output.back() == '\n') {
@@ -1307,13 +1335,13 @@ String Console::Process(const String &text) {
         }
 
         // Execute the shell command
-        FILE *pipe = popen(shellCmd.c_str(), "r");
+        FILE *pipe = KAI_POPEN(ToPlatformShellCommand(shellCmd).c_str(), "r");
         if (pipe) {
             char buffer[128];
             while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
                 result << buffer;
             }
-            int exitCode = pclose(pipe);
+            int exitCode = KAI_PCLOSE(pipe);
             if (exitCode != 0) {
                 result << "Command exited with code: " << exitCode << "\n";
             }

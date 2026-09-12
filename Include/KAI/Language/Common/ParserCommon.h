@@ -43,10 +43,10 @@ class ParserCommon : public ProcessCommon {
             Process(st);
         } catch (Exception::Base &e) {
             if (!Failed)
-                Fail(Lexer::CreateErrorMessage(Current(), "%s", e.ToString()));
+                Fail(Lexer::CreateErrorMessage(Current(), "{}", e.ToString()));
         } catch (std::exception &f) {
             if (!Failed)
-                Fail(Lexer::CreateErrorMessage(Current(), "%s", f.what()));
+                Fail(Lexer::CreateErrorMessage(Current(), "{}", f.what()));
         } catch (...) {
             if (!Failed)
                 Fail(Lexer::CreateErrorMessage(Current(), "internal error"));
@@ -81,6 +81,20 @@ class ParserCommon : public ProcessCommon {
     std::string error;
     int indent;
     std::shared_ptr<Lexer> lexer;
+
+    // Returned in place of tokens[...] whenever the requested index is out of
+    // range (empty token stream, or reading past the end of it). Malformed
+    // input (missing braces/semicolons, truncated files, etc.) routinely
+    // drives `current` past the last real token; Fail() below only records
+    // an error flag/message, it does not unwind the stack, so every accessor
+    // must stay memory-safe on its own rather than relying on the caller to
+    // stop after Fail() is called. Without this, the raw `tokens[idx]`
+    // indexing that used to follow each bounds check was still reached
+    // unconditionally, which is an out-of-bounds std::vector access - benign
+    // (reads garbage) on some STL implementations, but MSVC's debug STL
+    // asserts and raises a SEH exception for it (the crash seen in
+    // TauEdgeCaseTests.MalformedSyntax).
+    mutable TokenNode endToken_{};
 
    protected:
     bool Has() const { return current < tokens.size(); }
@@ -126,6 +140,7 @@ class ParserCommon : public ProcessCommon {
         // First check if tokens vector is empty
         if (tokens.empty()) {
             KAI_TRACE_ERROR_1(Fail("No tokens to process in Next()"));
+            return endToken_;
         }
 
         // Increment token index
@@ -134,6 +149,7 @@ class ParserCommon : public ProcessCommon {
         // Check if the new index is valid
         if (current >= tokens.size()) {
             KAI_TRACE_ERROR_1(Fail("Next token index out of range"));
+            return endToken_;
         }
 
         return tokens[current];
@@ -143,11 +159,13 @@ class ParserCommon : public ProcessCommon {
         // Check if tokens vector is empty
         if (tokens.empty()) {
             KAI_TRACE_ERROR_1(Fail("No tokens to process in Last()"));
+            return endToken_;
         }
 
         // Check if we can access the previous token
-        if (current <= 0) {
+        if (current == 0) {
             KAI_TRACE_ERROR_1(Fail("No previous token available"));
+            return endToken_;
         }
 
         return tokens[current - 1];
@@ -157,10 +175,12 @@ class ParserCommon : public ProcessCommon {
         // First check if tokens vector is empty to avoid range check error
         if (tokens.empty()) {
             KAI_TRACE_ERROR_1(Fail("No tokens to process"));
+            return endToken_;
         }
 
         if (current >= tokens.size()) {
             KAI_TRACE_ERROR_1(Fail("Token index out of range"));
+            return endToken_;
         }
 
         return tokens[current];
@@ -180,10 +200,12 @@ class ParserCommon : public ProcessCommon {
         // Check if tokens vector is empty
         if (tokens.empty()) {
             KAI_TRACE_ERROR_1(Fail("No tokens to process in Peek()"));
+            return endToken_;
         }
 
         if (current + 1 >= tokens.size()) {
             KAI_TRACE_ERROR() << "Unexpected end of tokens stream";
+            return endToken_;
         }
 
         return tokens[current + 1];
@@ -212,8 +234,9 @@ class ParserCommon : public ProcessCommon {
     }
 
     TokenNode const &Consume() {
-        if (current == tokens.size()) {
+        if (current >= tokens.size()) {
             KAI_TRACE_ERROR_1(Fail("Unexpected end of file"));
+            return endToken_;
         }
 
         return tokens[current++];
@@ -237,7 +260,7 @@ class ParserCommon : public ProcessCommon {
     AstNodePtr Expect(TokenEnum type) {
         TokenNode tok = Current();
         if (tok.type != type) {
-            Fail(Lexer::CreateErrorMessage(tok, "Expected %s, have %s",
+            Fail(Lexer::CreateErrorMessage(tok, "Expected {}, have {}",
                                            TokenEnumType::ToString(type),
                                            TokenEnumType::ToString(tok.type)));
             return nullptr;
