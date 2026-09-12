@@ -16,9 +16,13 @@
 
 #include <cstring>
 #elif defined(OS_WIN)
+// windows.h must come first: VersionHelpers.h uses WORD/DWORD/OSVERSIONINFOEXW
+// etc. from it but doesn't include it itself. This worked under MSVC (which
+// likely pulled windows.h in transitively from elsewhere in the translation
+// unit first) but fails standalone under Clang.
+#include <windows.h>
 #include <VersionHelpers.h>
 #include <io.h>
-#include <windows.h>
 #endif
 
 #include <algorithm>

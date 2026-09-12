@@ -2409,7 +2409,7 @@ bool Console::StartNetworking(int listenPort) {
     networkingEnabled_ = true;
     networkRunning_ = true;
 
-    messageThread_ = thread(&Console::ProcessNetworkMessages, this);
+    messageThread_ = jthread(&Console::ProcessNetworkMessages, this);
 
     cout << rang::fg::green << "Network console listening on "
          << bindAddress.host << ":" << listenPort_ << " (ID: " << consoleId_

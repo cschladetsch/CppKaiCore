@@ -56,7 +56,7 @@ class Console : public Reflected {
     std::unique_ptr<net::NetPeer> peer_;
     std::mutex peersMutex_;
     std::vector<net::NetAddress> connectedPeers_;
-    std::thread messageThread_;
+    std::jthread messageThread_;
     bool networkingEnabled_;
     bool networkRunning_;
     int listenPort_;

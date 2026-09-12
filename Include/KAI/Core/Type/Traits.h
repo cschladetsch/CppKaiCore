@@ -8,7 +8,11 @@
 #include <memory>
 #include <string>
 #include <typeinfo>
-#if defined(__GNUC__) || defined(__clang__)
+// Itanium ABI demangling is only available with the GNU/Itanium C++ ABI.
+// Clang targeting Windows with the MSVC runtime still defines __clang__
+// (and _MSC_VER, for Windows-SDK-header compatibility), but there is no
+// cxxabi.h there - it's the Microsoft ABI, not Itanium - so exclude that case.
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(_MSC_VER)
 #include <cxxabi.h>
 #endif
 
@@ -22,7 +26,7 @@ KAI_TYPE_BEGIN
 // elsewhere typeid::name() is already human-readable (e.g. MSVC).
 namespace type_name_detail {
 inline std::string Demangle(const char *mangled) {
-#if defined(__GNUC__) || defined(__clang__)
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(_MSC_VER)
     int status = 0;
     std::unique_ptr<char, void (*)(void *)> demangled(
         abi::__cxa_demangle(mangled, nullptr, nullptr, &status), std::free);
