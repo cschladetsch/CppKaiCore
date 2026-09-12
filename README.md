@@ -29,6 +29,20 @@ handle-targeted debugger actions. Snapshot lifecycle, debugger attachment and
 actions, and failures use KAI's `Logger`; snapshot payloads use stdout strictly
 as a transport channel.
 
+## Shell Command Execution
+
+The Executor's `Operation::ShellCommand` opcode (backtick expressions
+compiled out of Pi/Rho, gated by `ENABLE_SHELL_SYNTAX`, on by default) and
+`Console`'s own `` ` `` / `$` handling both run commands through
+`KAI/Core/PlatformShellCommand.h`. On Linux/macOS/WSL2 this is a plain
+`popen`/`pclose`. On native Windows, `_popen` would otherwise spawn
+`cmd.exe`, not a POSIX shell, so the command is base64-encoded and routed
+through `wsl.exe -e bash -lc "... | base64 -d | bash"` instead — this
+sidesteps double-escaping issues with commands whose own backslashes/quotes
+are meaningful (e.g. `printf '\n'`, `grep -o '[0-9]\+'`). A WSL2 distro with
+bash/coreutils installed and `wsl` on PATH is required for this to work on
+native Windows.
+
 ## Dependencies
 
 None beyond a C++23 standard library. CommonLang's lexer can optionally use
