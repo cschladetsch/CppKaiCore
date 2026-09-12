@@ -2576,6 +2576,13 @@ void Executor::Perform(Operation::Type op) {
             break;
         }
 
+	case Operation::DropN: {
+		for (int n = ConstDeref<int>(Pop()); n > 0; n--) {
+		      Pop();
+		}
+	     break;
+			       }
+
         default: {
             // Provide a default implementation for unimplemented operations
             KAI_TRACE_ERROR()
