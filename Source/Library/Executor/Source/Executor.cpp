@@ -29,6 +29,7 @@ Executor::Executor() {
     traceLevel_ = 0;
     stepNumber_ = 0;
     singleStep_ = false;
+    strictErrors_ = false;
 }
 
 Executor::~Executor() {
@@ -186,12 +187,21 @@ bool Executor::PopBool() {
         return true;
     } catch (const Exception::Base &e) {
         KAI_TRACE_ERROR() << "PopBool: Caught KAI exception: " << e.ToString();
+        if (strictErrors_) {
+            throw;
+        }
         return false;
     } catch (const std::exception &e) {
         KAI_TRACE_ERROR() << "PopBool: Caught std::exception: " << e.what();
+        if (strictErrors_) {
+            throw;
+        }
         return false;
     } catch (...) {
         KAI_TRACE_ERROR() << "PopBool: Caught unknown exception";
+        if (strictErrors_) {
+            throw;
+        }
         return false;
     }
 }

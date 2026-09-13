@@ -1,6 +1,7 @@
 #pragma once
 
 #include <KAI/Core/BuiltinTypes/Stack.h>
+#include <KAI/Core/Exception.h>
 #include <KAI/Core/Object/Reflected.h>
 #include <KAI/Core/Pathname.h>
 #include <KAI/Core/Value.h>
@@ -36,6 +37,31 @@ struct Executor : Reflected {
 
     void SetSingleStep(bool enable) { singleStep_ = enable; }
     bool GetSingleStep() const { return singleStep_; }
+
+    // Controls what EvalIdent and PopBool do when an identifier fails to
+    // resolve or their evaluation throws. (Most other catch sites in this
+    // class - ContinueOneInstruction, Eval's Operation-type dispatch - already
+    // rethrow unconditionally; EvalIdent and PopBool were the ones that
+    // instead swallowed the failure and produced a plausible-looking default
+    // value, so this flag scopes that specific policy rather than changing
+    // exception handling everywhere.)
+    //
+    // false (default, unchanged from previous behaviour): "REPL-resilience"
+    // mode - a resolution failure or exception is logged via KAI_TRACE_ERROR,
+    // and EvalIdent pushes an empty placeholder Object / PopBool returns
+    // false, so the console/script keeps running instead of dying on one bad
+    // token.
+    //
+    // true: "strict" mode - the same failures are rethrown (or thrown, for
+    // EvalIdent's two non-exception silent-failure paths: an invalid input
+    // object, and a non-Label identifier that fails to resolve) instead of
+    // being swallowed. Intended for tests and non-interactive script
+    // execution, where a bug three layers down should surface as a loud
+    // failure at its source rather than as a plausible-looking wrong value
+    // discovered much later (e.g. a "Type Mismatch" in an unrelated
+    // downstream operation).
+    void SetStrictErrors(bool enable) { strictErrors_ = enable; }
+    bool GetStrictErrors() const { return strictErrors_; }
 
     bool Step();
 
@@ -75,6 +101,9 @@ struct Executor : Reflected {
         try {
             // Validate the input object
             if (!Q.Valid()) {
+                if (strictErrors_) {
+                    KAI_THROW_1(InvalidIdentifier, Q);
+                }
                 KAI_TRACE_ERROR() << "EvalIdent: Invalid object";
                 return;  // Return early instead of throwing
             }
@@ -136,6 +165,9 @@ struct Executor : Reflected {
                     Push(placeholder);
                 } else {
                     // For non-Label types, we still need to handle the error
+                    if (strictErrors_) {
+                        KAI_THROW_1(CannotResolve, ident);
+                    }
                     KAI_TRACE_ERROR()
                         << "EvalIdent: Object not found: " << ident.ToString();
                     // Instead of throwing, push an empty object
@@ -144,16 +176,25 @@ struct Executor : Reflected {
             }
         } catch (const Exception::Base &e) {
             KAI_TRACE_ERROR() << "EvalIdent: KAI exception: " << e.ToString();
+            if (strictErrors_) {
+                throw;
+            }
             // Instead of rethrowing, push an empty object to allow execution to
             // continue
             Push(Object());
         } catch (const std::exception &e) {
             KAI_TRACE_ERROR() << "EvalIdent: std::exception: " << e.what();
+            if (strictErrors_) {
+                throw;
+            }
             // Instead of rethrowing, push an empty object to allow execution to
             // continue
             Push(Object());
         } catch (...) {
             KAI_TRACE_ERROR() << "EvalIdent: Unknown exception";
+            if (strictErrors_) {
+                throw;
+            }
             // Instead of rethrowing, push an empty object to allow execution to
             // continue
             Push(Object());
@@ -250,6 +291,7 @@ struct Executor : Reflected {
     int traceLevel_;
     int stepNumber_;
     bool singleStep_;
+    bool strictErrors_;
 };
 
 StringStream &operator<<(StringStream &, Executor const &);

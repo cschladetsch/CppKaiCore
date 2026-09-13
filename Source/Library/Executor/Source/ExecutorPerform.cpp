@@ -2493,8 +2493,8 @@ void Executor::Perform(Operation::Type op) {
                 }
             } else if (collection.IsType<String>()) {
                 auto& str = Deref<String>(collection);
-                KAI_TRACE() << "ForEach: Processing string with " << str.size()
-                            << " characters";
+                KAI_TRACE() << "ForEach: Processing string with "
+                            << static_cast<int>(str.size()) << " characters";
 
                 for (char ch : str) {
                     int stackDepthBefore = data_->Size();
@@ -2648,7 +2648,18 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
 
                 Eval(obj);
 
-                if (continuation_ != cont) {
+                // Identity check, NOT Object::operator!=. That operator is a
+                // deep value comparison (it only short-circuits on equal
+                // handles), so comparing two *different* continuations walks
+                // their code arrays element-wise and invokes each element's
+                // Equiv. If those arrays disagree on type at the same index -
+                // e.g. `{ add10 & }` vs add10's body `{ 10 + }`, Pathname vs
+                // int at index 1 - the int Equiv derefs the Pathname and
+                // throws TypeMismatch. Recursive functions happened to dodge
+                // this only because they hit an int-vs-int inequality first.
+                // All we want to know here is whether Eval() (via Suspend/
+                // Replace) swapped the current continuation out from under us.
+                if (continuation_.GetHandle() != cont.GetHandle()) {
                     if (replace_) {
                         if (pushContext && savedCont.Exists() &&
                             !context_->Empty()) {
