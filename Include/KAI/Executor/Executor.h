@@ -30,6 +30,11 @@ struct Executor : Reflected {
     Object GetScope() const;
 
     void SetContinuation(Value<Continuation>);
+    // Read-only accessor for the ImGui Debugger tab (and anything else that
+    // wants to inspect execution state without driving it) - continuation_
+    // itself stays private/mutated only through SetContinuation/Continue*
+    // below, this just exposes the current value.
+    Value<Continuation> GetContinuation() const { return continuation_; }
     void Continue();
     void Continue(Value<Continuation>);
     void ContinueOnly(Value<Continuation> C);

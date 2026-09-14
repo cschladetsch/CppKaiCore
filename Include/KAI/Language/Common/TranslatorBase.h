@@ -19,6 +19,16 @@ struct TranslatorBase : TranslatorCommon {
 
     virtual Pointer<Continuation> Translate(const char *text,
                                             Structure st) override {
+        // Failed/Error (inherited from Process) previously weren't reset
+        // here, so once a lex/parse failure set them, they stayed set
+        // forever - every later Translate() call on this same
+        // Pi/RhoTranslator instance would still read as Failed even after a
+        // subsequent call actually succeeded, since nothing ever cleared
+        // them back. Reset at the top of every call so Failed/Error always
+        // describe only the most recent Translate().
+        Failed = false;
+        Error.clear();
+
         if (text == 0 || text[0] == 0) {
             KAI_TRACE_WARN_1("No input");
             return Object();

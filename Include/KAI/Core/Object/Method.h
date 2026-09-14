@@ -24,7 +24,14 @@ struct MethodConst : ConstMethodBase<R (T::*)(Args...) const> {
     tuple<Args...> args_;
     static int constexpr arity = (int)sizeof...(Args);
 
-    MethodConst(MethodType m, const Label &N) : meth(m), Parent(m, N) {}
+    MethodConst(MethodType m, const Label &N) : meth(m), Parent(m, N) {
+        // return_type/class_type are otherwise left default-initialized,
+        // which is why MethodBase::ToString() used to print "None None::X()"
+        // for every reflected method - nothing ever set them. Fill them in
+        // here from the compile-time T/R the method was registered with.
+        this->return_type = Type::Traits<R>::Number;
+        this->class_type = Type::Traits<T>::Number;
+    }
 
     void ConstInvoke(const Object &servant, Stack &stack) {
         if constexpr (arity > 0) {
@@ -43,7 +50,16 @@ struct VoidMethodConst : ConstMethodBase<void (T::*)(Args...) const> {
     static size_t constexpr arity = sizeof...(Args);
     MethodType meth;
     tuple<Args...> args_;
-    VoidMethodConst(MethodType mb, const Label &N) : meth(mb), Parent(mb, N) {}
+    VoidMethodConst(MethodType mb, const Label &N) : meth(mb), Parent(mb, N) {
+        // Not setting return_type here: Type::Traits<void> is explicitly
+        // specialized in BuiltinTypes/Void.h, which isn't necessarily
+        // included yet wherever this template gets instantiated - forcing
+        // it here would implicitly instantiate the (undefined) primary
+        // Traits<void> template first and make the later specialization a
+        // hard error. There's no useful "return type" to show for a void
+        // method anyway.
+        this->class_type = Type::Traits<T>::Number;
+    }
 
     void ConstInvoke(const Object &servant, Stack &stack) {
         if constexpr (arity > 0) {
@@ -62,7 +78,10 @@ struct VoidMethod : MutatingMethodBase<void (T::*)(Args...)> {
     MethodType meth;
     tuple<Args...> args_;
 
-    VoidMethod(MethodType m, const Label &N) : meth(m), Parent(m, N) {}
+    VoidMethod(MethodType m, const Label &N) : meth(m), Parent(m, N) {
+        // See VoidMethodConst above re: why return_type is left unset here.
+        this->class_type = Type::Traits<T>::Number;
+    }
 
     void NonConstInvoke(const Object &servant, Stack &stack) override {
         if constexpr (arity > 0) {
@@ -81,7 +100,10 @@ struct Method : MutatingMethodBase<R (T::*)(Args...)> {
     MethodType meth;
     tuple<Args...> args_;
 
-    Method(MethodType m, const Label &N) : meth(m), Parent(m, N) {}
+    Method(MethodType m, const Label &N) : meth(m), Parent(m, N) {
+        this->return_type = Type::Traits<R>::Number;
+        this->class_type = Type::Traits<T>::Number;
+    }
 
     void NonConstInvoke(const Object &servant, Stack &stack) override {
         if constexpr (arity > 0) {

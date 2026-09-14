@@ -105,10 +105,28 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                     Array result = arr1 + arr2;  // Use our operator+
                     return createNew(result);
                 }
-                // Array + Object = array with object appended
-                else if (A.IsType<Array>()) {
-                    Array result = ConstDeref<Array>(A) + B;
-                    return createNew(result);
+                // Reject implicit array/non-array addition (e.g. array + int)
+                // the same way mixed string/non-string addition is rejected
+                // above - silently appending a mismatched value into the
+                // array via `+` reads as ordinary numeric addition and
+                // silently produces a corrupted-looking array on type
+                // mismatch instead of a clear error. Explicit appending
+                // still has PushBack/Insert for that.
+                else if (A.IsType<Array>() || B.IsType<Array>()) {
+                    const String leftType =
+                        (A.Valid() && A.GetClass())
+                            ? A.GetClass()->GetName().ToString()
+                            : String("<invalid>");
+                    const String rightType =
+                        (B.Valid() && B.GetClass())
+                            ? B.GetClass()->GetName().ToString()
+                            : String("<invalid>");
+                    KAI_THROW_1(
+                        Base,
+                        ("Type error: mixed array/non-array addition is not "
+                         "allowed (" +
+                         leftType + " + " + rightType + ")")
+                            .c_str());
                 }
                 // For other types, use the ClassBase's operation methods
                 else if (A.GetTypeNumber() == B.GetTypeNumber() &&

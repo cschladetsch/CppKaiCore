@@ -68,6 +68,13 @@ class MultiLangTranslator : public TranslatorCommon {
           compiler_(comp) {}
 
     Pointer<Continuation> Translate(const char *text, Structure st) override {
+        // Reset our own Failed/Error before dispatching, same reasoning as
+        // TranslatorBase::Translate's reset - this object is reused across
+        // every command, so a previous failure must not leak into this
+        // call's result.
+        Failed = false;
+        Error.clear();
+
         if (!compiler_.Exists()) return Object();
         switch (static_cast<Language>(compiler_->GetLanguage())) {
             case Language::Pi: {
@@ -75,6 +82,15 @@ class MultiLangTranslator : public TranslatorCommon {
                 auto result = pi_->Translate(text, st);
                 if (pi_->Failed) {
                     KAI_TRACE_ERROR() << pi_->Error;
+                    // Previously the lex/parse failure was logged to
+                    // Logs/kai.log and then silently dropped here - the
+                    // caller (Console::Process) only sees an empty,
+                    // !Exists() continuation with no way to tell "clean
+                    // no-op" apart from "syntax error", so it reported
+                    // nothing at all instead of a syntax error. Propagate
+                    // via Fail() so Console::Process can see Failed/Error
+                    // and surface it.
+                    Fail(pi_->Error);
                     return Object();
                 }
                 return result;
@@ -84,6 +100,7 @@ class MultiLangTranslator : public TranslatorCommon {
                 auto result = rho_->Translate(text, st);
                 if (rho_->Failed) {
                     KAI_TRACE_ERROR() << rho_->Error;
+                    Fail(rho_->Error);
                     return Object();
                 }
                 return result;
@@ -1384,6 +1401,18 @@ String Console::Process(const String &text) {
 
             // Execute the continuation using our improved Execute method
             Execute(cont);
+        } else if (translator && translator->Failed) {
+            // translator->Translate() returned an empty/!Exists()
+            // continuation because lexing/parsing actually failed (a real
+            // syntax error), not because of the ordinary empty-input case
+            // (that path also returns !Exists() but leaves Failed false) -
+            // report it the same way a thrown Exception::Base is reported
+            // below, so callers that pattern-match on the "Exception: "
+            // prefix (e.g. the ImGui console's AddProcessResultLog) render
+            // it as a visible error instead of this command silently
+            // producing no output at all.
+            result << "Exception: " << translator->Error << "\n";
+            return result.ToString();
         }
 
         const int removedInvalidEntries =
