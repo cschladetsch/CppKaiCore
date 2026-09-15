@@ -314,6 +314,10 @@ void Console::SetTranslator(std::shared_ptr<TranslatorCommon> trans) {
     if (compiler.Exists() && translator) {
         compiler->SetTranslateFunction(
             [this](const String &text, Structure st) -> Pointer<Continuation> {
+                if (language == Language::Rho) {
+                    auto freshRho = std::make_shared<RhoTranslator>(*reg_);
+                    return freshRho->Translate(text.c_str(), st);
+                }
                 return translator->Translate(text.c_str(), st);
             });
     }
@@ -725,7 +729,13 @@ void Console::ExecuteWithExecutor(const String &text,
     // Use the translator if available, otherwise use compiler
     Pointer<Continuation> cont;
 
-    if (translator) {
+    if (language == Language::Rho) {
+        // Same reasoning as Console::Process: a long-lived RhoTranslator
+        // reused across calls (via MultiLangTranslator) accumulates state
+        // that corrupts later translations, so use a fresh one per call.
+        auto freshRho = std::make_shared<RhoTranslator>(*reg_);
+        cont = freshRho->Translate(text.c_str(), st);
+    } else if (translator) {
         cont = translator->Translate(text.c_str(), st);
     } else if (compiler.Exists()) {
         cont = compiler->Translate(text.c_str(), st);
@@ -1846,7 +1856,10 @@ void Console::RegisterTypes() {
 }
 
 Pointer<Continuation> Console::Compile(const char *text, Structure st) {
-    if (translator) {
+    if (language == Language::Rho) {
+        auto freshRho = std::make_shared<RhoTranslator>(*reg_);
+        return freshRho->Translate(text, st);
+    } else if (translator) {
         return translator->Translate(text, st);
     } else if (compiler.Exists()) {
         return compiler->Translate(text, st);
