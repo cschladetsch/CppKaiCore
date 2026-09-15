@@ -1389,7 +1389,18 @@ String Console::Process(const String &text) {
 
         // Translate the text into a continuation
         Pointer<Continuation> cont;
-        if (translator) {
+        bool directRhoFailed = false;
+        String directRhoError;
+        if (language == Language::Rho) {
+            // Rho gets a brand new RhoTranslator per command rather than
+            // reusing a long-lived one through MultiLangTranslator - the
+            // persistent instance was accumulating state across commands
+            // and corrupting later translations.
+            auto freshRho = std::make_shared<RhoTranslator>(*reg_);
+            cont = freshRho->Translate(expandedText.c_str(), structure);
+            directRhoFailed = freshRho->Failed;
+            directRhoError = freshRho->Error;
+        } else if (translator) {
             cont = translator->Translate(expandedText.c_str(), structure);
         } else if (compiler.Exists()) {
             cont = compiler->Translate(expandedText.c_str(), structure);
@@ -1401,7 +1412,7 @@ String Console::Process(const String &text) {
 
             // Execute the continuation using our improved Execute method
             Execute(cont);
-        } else if (translator && translator->Failed) {
+        } else if (directRhoFailed || (translator && translator->Failed)) {
             // translator->Translate() returned an empty/!Exists()
             // continuation because lexing/parsing actually failed (a real
             // syntax error), not because of the ordinary empty-input case
@@ -1411,7 +1422,9 @@ String Console::Process(const String &text) {
             // prefix (e.g. the ImGui console's AddProcessResultLog) render
             // it as a visible error instead of this command silently
             // producing no output at all.
-            result << "Exception: " << translator->Error << "\n";
+            result << "Exception: "
+                   << (directRhoFailed ? directRhoError : translator->Error)
+                   << "\n";
             return result.ToString();
         }
 
@@ -1466,14 +1479,13 @@ String Console::GetPrompt() const {
 void Console::ShowColoredStack() const {
     const Value<const Stack> data = executor->GetDataStack();
     if (!data.Exists() || data->Size() == 0) {
-        return;  // Don't show anything for empty stack
+        return;
     }
 
     const auto &objects = data->GetStack();
     int index = data->Size() - 1;
-    for (auto A = objects.rbegin(); A != objects.rend(); ++A, --index) {
-        cout << rang::fgB::yellow << "[" << index << "]: "
-             << rang::fg::reset;
+    for (auto A = objects.begin(); A != objects.end(); ++A, --index) {
+	cout << rang::fgB::yellow << "[" << index << "]: " << rang::fg::reset;
 
         const bool is_string = A->GetTypeNumber() == Type::Number::String;
         const bool is_int = A->GetTypeNumber() == Type::Number::Signed32;
@@ -1638,7 +1650,7 @@ int Console::Run() {
                     }
                 } else if (!text.empty()) {
                     // Check for clear screen command
-                    if (text == "clear" || text == "cls") {
+                    if (text == "cls") {
                         ClearScreen();
                         continue;
                     }

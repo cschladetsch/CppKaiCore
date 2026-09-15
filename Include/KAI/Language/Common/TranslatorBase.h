@@ -2,6 +2,8 @@
 
 #include <KAI/Language/Common/TranslatorCommon.h>
 
+#include <iostream>
+
 KAI_BEGIN
 
 template <class EParser>
@@ -55,7 +57,6 @@ struct TranslatorBase : TranslatorCommon {
         parse->Process(lex, st);
         if (parse->Failed) {
             if (trace > 1) KAI_TRACE_1(parse->PrintTree());
-
             Fail(parse->Error);
             return Object();
         }
