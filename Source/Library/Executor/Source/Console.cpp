@@ -2457,9 +2457,6 @@ void Console::HandleConsoleCommand(const net::NetPacket& packet) {
             CopyMainStackToExecutor(peerExecutor);
         }
 
-        if (remoteLang != originalLang) {
-            SetLanguage(remoteLang);
-        }
 
         ExecuteWithExecutor(String(command.c_str()), peerExecutor);
         string resultDump = WriteStackForExecutor(peerExecutor).c_str();
@@ -2468,9 +2465,6 @@ void Console::HandleConsoleCommand(const net::NetPacket& packet) {
         }
         string simplifiedResult = SimplifyStackDump(resultDump);
 
-        if (remoteLang != originalLang) {
-            SetLanguage(originalLang);
-        }
 
         SendResultToPeer(packet.address, command, resultDump);
 
@@ -2486,9 +2480,6 @@ void Console::HandleConsoleCommand(const net::NetPacket& packet) {
         string error = "Error: " + string(e.ToString().c_str());
         SendResultToPeer(packet.address, command, error);
 
-        if (remoteLang != originalLang) {
-            SetLanguage(originalLang);
-        }
     }
 }
 
@@ -2556,9 +2547,6 @@ void Console::HandleConsoleBroadcast(const net::NetPacket& packet) {
             CopyMainStackToExecutor(peerExecutor);
         }
 
-        if (remoteLang != originalLang) {
-            SetLanguage(remoteLang);
-        }
 
         ExecuteWithExecutor(String(command.c_str()), peerExecutor);
         string resultDump = WriteStackForExecutor(peerExecutor).c_str();
@@ -2568,9 +2556,6 @@ void Console::HandleConsoleBroadcast(const net::NetPacket& packet) {
         string simplified = SimplifyStackDump(resultDump);
         cout << "   Result: " << resultDump << endl;
 
-        if (remoteLang != originalLang) {
-            SetLanguage(originalLang);
-        }
         
         NetworkConsoleMessage msg;
         msg.senderId = senderId + " [BROADCAST]";
@@ -2584,9 +2569,6 @@ void Console::HandleConsoleBroadcast(const net::NetPacket& packet) {
         cout << rang::fg::red << "   Error: " << e.ToString().c_str() 
              << rang::fg::reset << endl;
         
-        if (remoteLang != originalLang) {
-            SetLanguage(originalLang);
-        }
     }
 }
 
