@@ -7,6 +7,7 @@
 #include <KAI/Core/TriColor.h>
 
 #include <cassert>
+#include <set>
 #include <utility>
 
 #define KAI_USE_TRICOLOR
@@ -431,6 +432,26 @@ void MarkObject(StorageBase &storage, bool marked) {
     storage.GetClass()->SetMarked(storage, marked);
 }
 
+namespace {
+// Real cycle guard: tracks every handle visited on the current
+// MarkObjectAndChildren walk, not just an object's immediate parent. The
+// previous "child == storage" check only caught a direct self/parent
+// reference; any longer cycle (A -> B -> A, or worse, A -> B -> C -> A)
+// recursed until the stack blew or work was repeated indefinitely.
+void MarkObjectAndChildrenImpl(StorageBase &storage, bool marked,
+                                std::set<Handle> &visited) {
+    if (!visited.insert(storage.GetHandle()).second) return;  // already on this walk
+
+    MarkObject(storage, marked);
+    for (auto const &[_, object] : storage.GetDictionary()) {
+        auto &child = const_cast<Object &>(object);
+        if (!child.Exists()) continue;
+
+        MarkObjectAndChildrenImpl(child.GetStorageBase(), marked, visited);
+    }
+}
+}  // namespace
+
 void MarkObjectAndChildren(Object const &object, bool marked) {
     if (!object.Exists()) return;
 
@@ -438,15 +459,8 @@ void MarkObjectAndChildren(Object const &object, bool marked) {
 }
 
 void MarkObjectAndChildren(StorageBase &storage, bool marked) {
-    MarkObject(storage, marked);
-    for (auto const &[_, object] : storage.GetDictionary()) {
-        auto &child = const_cast<Object &>(object);
-        if (child.GetHandle() ==
-            storage.GetHandle())  // HACK to sorta/kinda avoid cycles :/
-            continue;
-
-        MarkObjectAndChildren(child, marked);
-    }
+    std::set<Handle> visited;
+    MarkObjectAndChildrenImpl(storage, marked, visited);
 }
 
 void Registry::GarbageCollect(Object root) {
