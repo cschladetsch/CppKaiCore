@@ -116,4 +116,3 @@ struct OutOfBounds : Base {
 
 StringStream &operator<<(StringStream &, Exception::Base const &);
 
-KAI_END
