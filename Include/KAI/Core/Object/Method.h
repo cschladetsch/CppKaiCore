@@ -11,7 +11,7 @@
 KAI_BEGIN
 
 namespace method_detail {
-using namespace std;
+// using namespace std; // removed: pollutes kai namespace
 using namespace meta;
 using namespace detail;
 
@@ -21,7 +21,7 @@ struct MethodConst : ConstMethodBase<R (T::*)(Args...) const> {
     typedef R (T::*MethodType)(Args...) const;
     typedef ConstMethodBase<MethodType> Parent;
     MethodType meth;
-    tuple<Args...> args_;
+    std::tuple<Args...> args_;
     static int constexpr arity = (int)sizeof...(Args);
 
     MethodConst(MethodType m, const Label &N) : meth(m), Parent(m, N) {}
@@ -40,7 +40,7 @@ template <class T, class... Args>
 struct VoidMethodConst : ConstMethodBase<void (T::*)(Args...) const> {
     typedef void (T::*MethodType)(Args...) const;
     typedef ConstMethodBase<MethodType> Parent;
-    static size_t constexpr arity = sizeof...(Args);
+    static std::size_t constexpr arity = sizeof...(Args);
     MethodType meth;
     tuple<Args...> args_;
     VoidMethodConst(MethodType mb, const Label &N) : meth(mb), Parent(mb, N) {}
@@ -58,9 +58,9 @@ template <class T, class... Args>
 struct VoidMethod : MutatingMethodBase<void (T::*)(Args...)> {
     typedef void (T::*MethodType)(Args...);
     typedef MutatingMethodBase<MethodType> Parent;
-    static size_t constexpr arity = sizeof...(Args);
+    static std::size_t constexpr arity = sizeof...(Args);
     MethodType meth;
-    tuple<Args...> args_;
+    std::tuple<Args...> args_;
 
     VoidMethod(MethodType m, const Label &N) : meth(m), Parent(m, N) {}
 
@@ -77,9 +77,9 @@ template <class T, class R, class... Args>
 struct Method : MutatingMethodBase<R (T::*)(Args...)> {
     typedef R (T::*MethodType)(Args...);
     typedef MutatingMethodBase<MethodType> Parent;
-    static size_t constexpr arity = sizeof...(Args);
+    static std::size_t constexpr arity = sizeof...(Args);
     MethodType meth;
-    tuple<Args...> args_;
+    std::tuple<Args...> args_;
 
     Method(MethodType m, const Label &N) : meth(m), Parent(m, N) {}
 

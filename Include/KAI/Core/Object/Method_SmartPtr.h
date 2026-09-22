@@ -11,7 +11,7 @@
 KAI_BEGIN
 
 namespace method_detail {
-using namespace std;
+// using namespace std; // removed: pollutes kai namespace
 using namespace meta;
 using namespace detail;
 
@@ -23,7 +23,7 @@ struct MethodConst : ConstMethodBase<R (T::*)(Args...) const> {
     typedef R (T::*MethodType)(Args...) const;
     typedef ConstMethodBase<MethodType> Parent;
     MethodType meth;
-    tuple<Args...> args_;
+    std::tuple<Args...> args_;
     static int constexpr arity = (int)sizeof...(Args);
 
     MethodConst(MethodType m, const Label &N) : meth(m), Parent(m, N) {}

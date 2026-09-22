@@ -12,23 +12,23 @@
 KAI_BEGIN
 
 namespace detail {
-using namespace std;
+// using namespace std; // removed: pollutes kai namespace
 using namespace meta;
 
 template <typename F, typename Tuple, size_t... I>
-decltype(auto) CallFunImpl(F f, Tuple &&t, index_sequence<I...>) {
+decltype(auto) CallFunImpl(F f, Tuple &&t, std::index_sequence<I...>) {
     return std::forward<F>(f)(get<I>(std::forward<Tuple>(t))...);
 }
 
 // invoke a function with any arity given arguments in a tuple
 template <typename F, typename Tuple>
 decltype(auto) CallFun(F f, Tuple &&t) {
-    using idx = make_index_sequence<tuple_size<decay_t<Tuple>>::value>;
+    using idx = std::make_index_sequence<std::tuple_size<std::decay_t<Tuple>>::value>;
     return CallFunImpl(std::forward<F>(f), std::forward<Tuple>(t), idx{});
 }
 
 template <class Q, typename F, typename Tuple, size_t... I>
-decltype(auto) CallMethodImpl(Q &q, F f, Tuple &&t, index_sequence<I...>) {
+decltype(auto) CallMethodImpl(Q &q, F f, Tuple &&t, std::index_sequence<I...>) {
     auto m = std::forward<F>(f);
     return (q.*m)(get<I>(std::forward<Tuple>(t))...);
 }
@@ -36,7 +36,7 @@ decltype(auto) CallMethodImpl(Q &q, F f, Tuple &&t, index_sequence<I...>) {
 // invoke a method of any arity given arguments in a tuple
 template <class Q, typename F, typename Tuple>
 decltype(auto) CallMethod(Q &q, F f, Tuple &&t) {
-    using idx = make_index_sequence<tuple_size<decay_t<Tuple>>::value>;
+    using idx = std::make_index_sequence<std::tuple_size<std::decay_t<Tuple>>::value>;
     return CallMethodImpl(q, std::forward<F>(f), std::forward<Tuple>(t), idx{});
 }
 
