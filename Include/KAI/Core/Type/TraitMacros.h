@@ -29,18 +29,18 @@ KAI_BEGIN
 // N = the number from ::kai::Type::Number
 // P = operations allowed on the type
 #define KAI_TYPE_TRAITS(T, N, Ops) \
-    KAI_TYPE_TRAITS_NAMED(T, N, #T, Ops | Properties::Assign)
+    KAI_TYPE_TRAITS_NAMED(T, N, #T, Ops | ::kai::Type::Properties::Assign)
 
 #define KAI_TYPE_TRAITS_BASIC(T, N) KAI_TYPE_TRAITS(T, N, 0)
 
 // need these defined before they are fully defined for forward references to
 // their Traits
 KAI_TYPE_TRAITS(String, Number::String,
-                Properties::Streaming | Properties::Plus | Properties::Equiv |
-                    Properties::Relational | Properties::Boolean)
+                ::kai::Type::Properties::Streaming | ::kai::Type::Properties::Plus | ::kai::Type::Properties::Equiv |
+                    ::kai::Type::Properties::Relational | ::kai::Type::Properties::Boolean)
 
 KAI_TYPE_TRAITS(Handle, Number::Handle,
-                Properties::Boolean | Properties::StringStreamInsert)
+                ::kai::Type::Properties::Boolean | ::kai::Type::Properties::StringStreamInsert)
 
 KAI_TYPE_TRAITS(::kai::Type::Number, ::kai::Type::Number::TypeNumber,
                 ::kai::Type::Properties::StringStreamInsert);

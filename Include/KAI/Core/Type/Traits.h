@@ -81,7 +81,7 @@ struct TraitsBase {
     template <class, bool>
     struct AssignOp {
         static void Perform(Reference, ConstReference) {
-            KAI_THROW_2(NoOperation, Number, Properties::Assign);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Assign);
         }
     };
     template <class Dummy>
@@ -93,7 +93,7 @@ struct TraitsBase {
     template <class Dummy, bool>
     struct AbsoluteOp {
         static void Perform(Reference) {
-            KAI_THROW_2(NoOperation, Number, Properties::Absolute);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Absolute);
         }
     };
 
@@ -107,7 +107,7 @@ struct TraitsBase {
     template <class Dummy, bool>
     struct LessOp {
         static bool Perform(ConstReference, ConstReference) {
-            KAI_THROW_2(NoOperation, Number, Properties::Less);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Less);
         }
     };
 
@@ -128,14 +128,14 @@ struct TraitsBase {
     template <class Dummy>
     struct EquivOp<Dummy, false> {
         static bool Perform(ConstReference, ConstReference) {
-            KAI_THROW_2(NoOperation, Number, Properties::Equiv);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Equiv);
         }
     };
     /// Greater
     template <class Dummy, bool>
     struct GreaterOp {
         static bool Perform(ConstReference, ConstReference) {
-            KAI_THROW_2(NoOperation, Number, Properties::Greater);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Greater);
         }
     };
 
@@ -150,7 +150,7 @@ struct TraitsBase {
     template <class Dummy, bool>
     struct PlusOp {
         static Store Perform(ConstReference, ConstReference) {
-            KAI_THROW_2(NoOperation, Number, Properties::Plus);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Plus);
         }
     };
 
@@ -164,7 +164,7 @@ struct TraitsBase {
     template <class Dummy, bool>
     struct BoolOp {
         static bool Perform(ConstReference) {
-            KAI_THROW_2(NoOperation, Number, Properties::Boolean);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Boolean);
         }
     };
 
@@ -183,14 +183,14 @@ struct TraitsBase {
     template <class D>
     struct MinusOp<D, false> {
         static Store Perform(ConstReference, ConstReference) {
-            KAI_THROW_2(NoOperation, Number, Properties::Minus);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Minus);
         }
     };
 
     template <class D, bool>
     struct MultiplyOp {
         static Store Perform(ConstReference, ConstReference) {
-            KAI_THROW_2(NoOperation, Number, Properties::Multiply);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Multiply);
         }
     };
 
@@ -204,7 +204,7 @@ struct TraitsBase {
     template <class, bool>
     struct DivideOp {
         static Store Perform(ConstReference, ConstReference) {
-            KAI_THROW_2(NoOperation, Number, Properties::Divide);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Divide);
         }
     };
 
@@ -230,7 +230,7 @@ struct TraitsBase {
     template <class D>
     struct HashOp<D, false> {
         static HashValue Calc(ConstReference) {
-            KAI_THROW_2(NoOperation, Number, Properties::CalcHashValue);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::CalcHashValue);
         }
     };
 
@@ -298,24 +298,24 @@ struct TraitsBase {
         }
     };
 
-    typedef Contained<D, HasProperty<Properties::Container>::Value>
+    typedef Contained<D, HasProperty<::kai::Type::Properties::Container>::Value>
         ContainerOps;
     typedef
-        typename meta::If<HasProperty<Properties::Reflected>::Value != 0,
+        typename meta::If<HasProperty<::kai::Type::Properties::Reflected>::Value != 0,
                           ReflectedLifetimeManagement,
                           UnReflectedLifetimeManagement>::Type LifetimeManager;
-    typedef AssignOp<D, HasProperty<Properties::Assign>::Value != 0> Assign;
-    typedef AbsoluteOp<D, HasProperty<Properties::Absolute>::Value != 0>
+    typedef AssignOp<D, HasProperty<::kai::Type::Properties::Assign>::Value != 0> Assign;
+    typedef AbsoluteOp<D, HasProperty<::kai::Type::Properties::Absolute>::Value != 0>
         Absolute;
-    typedef LessOp<D, HasProperty<Properties::Less>::Value != 0> Less;
-    typedef EquivOp<D, HasProperty<Properties::Equiv>::Value != 0> Equiv;
-    typedef GreaterOp<D, HasProperty<Properties::Greater>::Value != 0> Greater;
-    typedef PlusOp<D, HasProperty<Properties::Plus>::Value != 0> Plus;
-    typedef MinusOp<D, HasProperty<Properties::Minus>::Value != 0> Minus;
-    typedef DivideOp<D, HasProperty<Properties::Divide>::Value != 0> Divide;
-    typedef MultiplyOp<D, HasProperty<Properties::Multiply>::Value != 0>
+    typedef LessOp<D, HasProperty<::kai::Type::Properties::Less>::Value != 0> Less;
+    typedef EquivOp<D, HasProperty<::kai::Type::Properties::Equiv>::Value != 0> Equiv;
+    typedef GreaterOp<D, HasProperty<::kai::Type::Properties::Greater>::Value != 0> Greater;
+    typedef PlusOp<D, HasProperty<::kai::Type::Properties::Plus>::Value != 0> Plus;
+    typedef MinusOp<D, HasProperty<::kai::Type::Properties::Minus>::Value != 0> Minus;
+    typedef DivideOp<D, HasProperty<::kai::Type::Properties::Divide>::Value != 0> Divide;
+    typedef MultiplyOp<D, HasProperty<::kai::Type::Properties::Multiply>::Value != 0>
         Multiply;
-    typedef BoolOp<D, HasProperty<Properties::Boolean>::Value != 0> Boolean;
+    typedef BoolOp<D, HasProperty<::kai::Type::Properties::Boolean>::Value != 0> Boolean;
     template <bool, class Stream>
     struct StreamInsertOp {
         static void Insert(Stream &S, ConstReference X) { S << X; }
@@ -335,32 +335,32 @@ struct TraitsBase {
     template <class Stream>
     struct StreamExtractOp<false, Stream> {
         static void Extract(Stream &, ConstReference) {
-            KAI_THROW_2(NoOperation, Number, Properties::StreamExtract);
+            KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::StreamExtract);
         }
     };
 
-    typedef StreamInsertOp<HasProperty<Properties::StringStreamInsert>::Value !=
+    typedef StreamInsertOp<HasProperty<::kai::Type::Properties::StringStreamInsert>::Value !=
                                0,
                            KAI_NAMESPACE(StringStream)>
         StringStreamInsert;
     typedef StreamExtractOp<
-        HasProperty<Properties::StringStreamExtract>::Value != 0,
+        HasProperty<::kai::Type::Properties::StringStreamExtract>::Value != 0,
         KAI_NAMESPACE(StringStream)>
         StringStreamExtract;
-    typedef StreamInsertOp<HasProperty<Properties::BinaryStreamInsert>::Value !=
+    typedef StreamInsertOp<HasProperty<::kai::Type::Properties::BinaryStreamInsert>::Value !=
                                0,
                            KAI_NAMESPACE(BinaryStream)>
         BinaryStreamInsert;
     typedef StreamExtractOp<
-        HasProperty<Properties::BinaryStreamExtract>::Value != 0,
+        HasProperty<::kai::Type::Properties::BinaryStreamExtract>::Value != 0,
         KAI_NAMESPACE(BinaryStream)>
         BinaryPacketExtract;
 
     // typedef typename
-    // StreamInsert<HasProperty<Properties::XmlStreamInsert>::Value, XmlStream>
+    // StreamInsert<HasProperty<::kai::Type::Properties::XmlStreamInsert>::Value, XmlStream>
     // XmlStreamInsert;
 
-    typedef HashOp<D, HasProperty<Properties::NoHashValue>::Value != 0>
+    typedef HashOp<D, HasProperty<::kai::Type::Properties::NoHashValue>::Value != 0>
         HashFunction;
 };
 

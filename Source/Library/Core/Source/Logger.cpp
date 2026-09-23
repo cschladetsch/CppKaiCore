@@ -60,32 +60,32 @@ std::string FormatTimestamp(const std::tm& time_info) {
 }
 
 // Get the appropriate color for a log level
-rang::fg GetColorForLevel(Logger::Level level) {
+rang::Fg GetColorForLevel(Logger::Level level) {
     switch (level) {
         case Logger::Level::Debug:
-            return rang::fg::cyan;
+            return rang::Fg::Cyan;
         case Logger::Level::Info:
-            return rang::fg::green;
+            return rang::Fg::Green;
         case Logger::Level::Warning:
-            return rang::fg::yellow;
+            return rang::Fg::Yellow;
         case Logger::Level::Error:
-            return rang::fg::red;
+            return rang::Fg::Red;
         case Logger::Level::Fatal:
-            return rang::fg::red;
+            return rang::Fg::Red;
         default:
-            return rang::fg::reset;
+            return rang::Fg::Reset;
     }
 }
 
 // Get the appropriate style for a log level
-rang::style GetStyleForLevel(Logger::Level level) {
+rang::Style GetStyleForLevel(Logger::Level level) {
     if (level == Logger::Level::Fatal) {
-        return rang::style::bold;
+        return rang::Style::Bold;
     }
     if (level == Logger::Level::Error) {
-        return rang::style::bold;
+        return rang::Style::Bold;
     }
-    return rang::style::reset;
+    return rang::Style::Reset;
 }
 
 void Logger::Init(const std::string& logDirectory) {
@@ -181,8 +181,8 @@ void Logger::Log(Level level, const std::string& message) {
     std::string formattedMessage = ss.str();
 
     // Get color and style for this log level
-    rang::fg color = GetColorForLevel(level);
-    rang::style style = GetStyleForLevel(level);
+    rang::Fg color = GetColorForLevel(level);
+    rang::Style style = GetStyleForLevel(level);
 
     // Determine if we should output to console
     bool outputToConsole = false;
@@ -199,13 +199,13 @@ void Logger::Log(Level level, const std::string& message) {
     // Print to console if needed
     if (outputToConsole) {
         if (level == Level::Error || level == Level::Fatal) {
-            std::cerr << rang::fg::gray << "[" << timestamp << "] " << style
-                      << color << "[" << levelStr << "] " << rang::style::reset
-                      << rang::fg::reset << message << std::endl;
+            std::cerr << rang::Fg::Gray << "[" << timestamp << "] " << style
+                      << color << "[" << levelStr << "] " << rang::Style::Reset
+                      << rang::Fg::Reset << message << std::endl;
         } else {
-            std::cout << rang::fg::gray << "[" << timestamp << "] " << style
-                      << color << "[" << levelStr << "] " << rang::style::reset
-                      << rang::fg::reset << message << std::endl;
+            std::cout << rang::Fg::Gray << "[" << timestamp << "] " << style
+                      << color << "[" << levelStr << "] " << rang::Style::Reset
+                      << rang::Fg::Reset << message << std::endl;
         }
     }
 
