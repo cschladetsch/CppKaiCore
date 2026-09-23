@@ -28,6 +28,7 @@ struct Operation {
         Multiply,
         Divide,
         Modulo,
+	Abs,
         TypeOf,
 
         Store,
