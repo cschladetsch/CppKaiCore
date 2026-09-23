@@ -373,25 +373,13 @@ void Executor::Perform(Operation::Type op) {
             // affect runtime execution
             break;
 
-        case Operation::Suspend: {
-            KAI_TRACE() << "Operation::Suspend - processing function call";
-
-            // Debug: Show current continuation state
-            if (continuation_.Exists() && continuation_->GetCode().Exists()) {
-                auto currentIndex = ConstDeref<int>(continuation_->index);
-                KAI_TRACE() << "  Current continuation index: " << currentIndex
-                            << " of " << continuation_->GetCode()->Size();
-            }
-
-            // Get the function/continuation to execute
-            auto funcObj = Pop();
-
-            // Save current continuation on the context stack for later
-            // resumption
-            context_->Push(continuation_);
-
-            // Create and set the new continuation
-            continuation_ = NewContinuation(funcObj);
+case Operation::Suspend: {
+    auto funcObj = Pop();
+    if (funcObj.IsType<Label>() || funcObj.IsType<Pathname>()) {
+        funcObj = Resolve(funcObj);
+    }
+    context_->Push(continuation_);
+    continuation_ = NewContinuation(funcObj);
             KAI_TRACE() << "  Creating new continuation from: "
                         << funcObj.ToString();
             KAI_TRACE() << "  Context stack size: " << context_->Size();
@@ -408,6 +396,8 @@ void Executor::Perform(Operation::Type op) {
                 KAI_TRACE() << "  Called Enter on new continuation";
             }
 
+            replace_ = true;
+            break_ = true;
             break;
         }
 
@@ -2502,6 +2492,15 @@ void Executor::Perform(Operation::Type op) {
             break;
         }
 
+        case Operation::Abs: {
+            Object A = Pop();
+            if (A.IsType<int>()) Push(New<int>(std::abs(ConstDeref<int>(A))));
+            else if (A.IsType<float>()) Push(New<float>(std::abs(ConstDeref<float>(A))));
+            else if (A.IsType<double>()) Push(New<double>(std::abs(ConstDeref<double>(A))));
+            else KAI_THROW_1(Base, "Abs requires numeric type");
+            break;
+        }
+
         default: {
             // Provide a default implementation for unimplemented operations
             KAI_TRACE_ERROR()
@@ -2517,6 +2516,7 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
     std::function<void(Pointer<Continuation>, bool)> executeInline;
     executeInline = [this, &executeInline](Pointer<Continuation> cont,
                                            bool pushContext) {
+        std::cerr << "[ECI-lambda] enter cont.Exists()=" << cont.Exists() << std::endl;
         if (!cont.Exists() || !cont->GetCode().Exists()) {
             return;
         }
@@ -2561,6 +2561,8 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
                 int index = ConstDeref<int>(cont->index);
                 auto obj = cont->GetCode()->At(index);
                 *cont->index = index + 1;
+
+                std::cerr << "[ECI-loop] index=" << index << " obj.Exists()=" << obj.Exists() << std::endl;
 
                 if (!obj.Exists()) continue;
 
@@ -2628,7 +2630,9 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
     if (cont.Exists()) {
         bool hadScope = cont->GetScope().Exists();
         Value<Continuation> orig = cont;
+        std::cerr << "[ECI-outer] after orig=cont OK, orig.Valid()=" << orig.Valid() << " orig.Exists()=" << orig.Exists() << std::endl;
         inlineCont = NewContinuation(orig);
+        std::cerr << "[ECI-outer] after NewContinuation, inlineCont.Exists()=" << inlineCont.Exists() << std::endl;
         if (inlineCont.Exists()) {
             if (hadScope) {
                 inlineCont->SetScope(cont->GetScope());

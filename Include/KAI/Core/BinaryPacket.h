@@ -40,6 +40,7 @@ class BinaryPacket {
 
     void SetRegistry(Registry *R) { registry = R; }
     Registry *GetRegistry() const { return registry; }
+void Reset() { current = first; } 
 
     static void Register(Registry &, const char *);
 

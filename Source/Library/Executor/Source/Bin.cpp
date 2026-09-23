@@ -121,6 +121,7 @@ Object Freeze(Object Q) {
 
 Object Thaw(Object Q) {
     BinaryStream &S = Deref<BinaryStream>(Q);
+    S.Reset();
     S.SetRegistry(Q.GetRegistry());
     Object N;
     S >> N;

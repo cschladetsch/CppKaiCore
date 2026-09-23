@@ -519,12 +519,15 @@ void Executor::Eval(Object const &Q) {
     // Simplified: Treat evaluation as a simple dispatch based on type
     switch (GetTypeNumber(Q).value) {
         case Type::Number::Operation: {
+            std::cerr << "[Eval-Op] enter, Q.IsType<Operation>()=" << Q.IsType<Operation>() << " Q.ToString()=" << Q.ToString() << std::endl;
             try {
                 const auto op = Deref<Operation>(Q).GetTypeNumber();
+                std::cerr << "[Eval-Op] got op=" << static_cast<int>(op) << std::endl;
                 Perform(op);
             } catch (const Exception::Base &e) {
                 // Re-throw KAI exceptions (like assertion failures) so they can
                 // be handled by the caller
+                std::cerr << "[Eval-Op] KAI exception: " << e.ToString() << std::endl;
                 KAI_TRACE_ERROR()
                     << "Eval: KAI Exception performing operation: "
                     << e.ToString();
