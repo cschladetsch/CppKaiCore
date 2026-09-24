@@ -325,6 +325,7 @@ Object Executor::TryResolve(Object const &Q) const {
 }
 
 Object Executor::TryResolve(Label const &label) const {
+    std::cerr << "[TR0] TryResolve(Label) called for: " << label.ToString() << std::endl;
     // Handle empty label case
     if (label.ToString().empty()) {
         // KAI_TRACE() << "TryResolve: Empty label";
@@ -341,21 +342,16 @@ Object Executor::TryResolve(Label const &label) const {
             KAI_TRACE() << "  scope.Has('" << label.ToString() << "'): " << (scope.Has(label) ? "YES" : "NO");
         }
     }
+    std::cerr << "[TR-CTXSTART] label=" << label.ToString() << " about to loop context_, size=" << context_->Size() << std::endl;
     KAI_TRACE() << "  context stack size: " << context_->Size();
-    for (int i = 0; i < context_->Size(); ++i) {
-        Pointer<Continuation> cont = context_->At(i);
-        if (cont.Exists()) {
-            Object scope = cont->GetScope();
-            KAI_TRACE() << "  context[" << i << "] scope exists: " << (scope.Exists() ? "yes" : "no")
-                        << ", Has('" << label.ToString() << "'): " << (scope.Has(label) ? "YES" : "NO");
-        }
-    }
+    for (int i = 0; i < context_->Size(); ++i) {         std::cerr << "[TR-CTXLOOP] i=" << i << " entering" << std::endl;         try {             Pointer<Continuation> cont = context_->At(i);             std::cerr << "[TR-CTXLOOP] i=" << i << " cont.Exists()=" << cont.Exists() << std::endl;             if (cont.Exists()) {                 Object scope = cont->GetScope();                 std::cerr << "[TR-CTXLOOP] i=" << i << " scope.Exists()=" << scope.Exists() << std::endl;                 bool hasIt = scope.Exists() && scope.Has(label);                 std::cerr << "[TR-CTXLOOP] i=" << i << " Has(label)=" << hasIt << std::endl;             }         } catch (const std::exception &e) {             std::cerr << "[TR-CTXLOOP] i=" << i << " EXCEPTION: " << e.what() << std::endl;         } catch (...) {             std::cerr << "[TR-CTXLOOP] i=" << i << " UNKNOWN EXCEPTION" << std::endl;         }     }
     KAI_TRACE() << "  tree exists: " << (tree_ ? "yes" : "no");
 
+    std::cerr << "[TR-PRE] reached search-in-current-scope for label=" << label.ToString() << " context_ size=" << context_->Size() << std::endl;
     // Search in current scope.
     if (continuation_.Exists()) {
         Object scope = continuation_->GetScope();
-        if (scope.Exists() && scope.Has(label)) return scope.Get(label);
+        if (scope.Exists() && scope.Has(label)) { Object _r = scope.Get(label); std::cerr << "[TR1] found in continuation_ scope, label=" << label.ToString() << " val=" << (_r.Exists() ? _r.ToString() : "<none>") << " typeNum=" << _r.GetTypeNumber().value << std::endl; return _r; } else if (continuation_.Exists()) { std::cerr << "[TR1-MISS] label=" << label.ToString() << " scope.Exists()=" << scope.Exists() << " scope.Has(label)=" << (scope.Exists() ? scope.Has(label) : false) << std::endl; }
     }
 
     // search in parent scopes...
@@ -367,13 +363,13 @@ Object Executor::TryResolve(Label const &label) const {
         Object scope = cont->GetScope();
         // Try both Has (direct children) and HasChild (recursive search)
         if (scope.Exists() && scope.Has(label))
-            return scope.Get(label);
+            std::cerr << "[TR3] found in parent context_ scope" << std::endl; return scope.Get(label);
         if (scope.Exists() && scope.HasChild(label))
             return scope.GetChild(label);
     }
 
     // Finally, search the tree.
-    return tree_->Resolve(label);
+    Object _rf = tree_->Resolve(label); std::cerr << "[TR2] fell through to tree_->Resolve, label=" << label.ToString() << " val=" << (_rf.Exists() ? _rf.ToString() : "<none>") << " typeNum=" << _rf.GetTypeNumber().value << std::endl; return _rf;
 }
 
 // Enhanced TryResolveOrCreate method that attempts to resolve an identifier
@@ -527,7 +523,7 @@ void Executor::Eval(Object const &Q) {
             } catch (const Exception::Base &e) {
                 // Re-throw KAI exceptions (like assertion failures) so they can
                 // be handled by the caller
-                std::cerr << "[Eval-Op] KAI exception: " << e.ToString() << std::endl;
+                std::cerr << "[Eval-Op] KAI exception caught: " << e.ToString() << std::endl;
                 KAI_TRACE_ERROR()
                     << "Eval: KAI Exception performing operation: "
                     << e.ToString();

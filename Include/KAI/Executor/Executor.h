@@ -81,6 +81,7 @@ struct Executor : Reflected {
 
             // Extract the identifier from the object
             Ident const &ident = ConstDeref<Ident>(Q);
+            std::cerr << "[EI1] EvalIdent name=" << ident.ToString() << " quoted=" << ident.Quoted() << std::endl;
 
             // For quoted identifiers, just push the original object
             if (ident.Quoted()) {
@@ -231,6 +232,7 @@ private:
     void ConditionalContextSwitch(Operation::Type);
     Pointer<Continuation> NewContinuation(Value<Continuation> P);
     void ExecuteContinuationInline(Pointer<Continuation> cont);
+    void ExecuteContinuationInlineAndDrain(Pointer<Continuation> cont);
 
     Object TryResolve(Object const &) const;
     Object TryResolve(Label const &label) const;

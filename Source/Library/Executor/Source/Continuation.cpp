@@ -54,15 +54,26 @@ void Continuation::Enter(Executor *exec) {
         if (!scope.Exists()) scope = exec->New<void>();
 
         Stack &data = *exec->GetDataStack();
-        if (data.Size() < args->Size()) {
-            KAI_TRACE_ERROR_2(data.Size(), args->Size())
-                << "Failed to enter continuation: not enough args";
-            KAI_THROW_0(EmptyStack);
-        }
+        std::cerr << "[Enter] args.Exists()=" << args.Exists()
+                   << " args.Empty()=" << (args.Exists() ? args->Empty() : true)
+                   << " args.Size()=" << (args.Exists() ? args->Size() : -1)
+                   << " data.Size()=" << data.Size() << std::endl;
+        if (args.Exists() && !args->Empty()) {
+            for (auto arg : *args) {
+                std::cerr << "[Enter]   arg label=" << ConstDeref<Label>(arg).ToString() << std::endl;
+            }
+            if (data.Size() < args->Size()) {
+                KAI_TRACE_ERROR_2(data.Size(), args->Size())
+                    << "Failed to enter continuation: not enough args";
+                KAI_THROW_0(EmptyStack);
+            }
 
-        for (auto arg : *args) {
-            Object a = data.Pop();
-            scope.Set(ConstDeref<Label>(arg), a);
+            for (auto arg : *args) {
+                Object a = data.Pop();
+                std::cerr << "[Enter]   binding " << ConstDeref<Label>(arg).ToString() << " = " << a.ToString() << std::endl;
+                scope.Set(ConstDeref<Label>(arg), a);
+                std::cerr << "[EnterRT] immediately after Set: scope.Has(same arg label)=" << scope.Has(ConstDeref<Label>(arg)) << std::endl;
+            }
         }
     }
 

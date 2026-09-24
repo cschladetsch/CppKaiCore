@@ -802,7 +802,7 @@ case Operation::Suspend: {
 
             // If it's an identifier (Label/Pathname), resolve it first
             if (obj.IsType<Label>() || obj.IsType<Pathname>()) {
-                obj = Resolve(obj);
+                obj = Resolve(obj, /*ignoreQuote=*/true);  // Retreive (& operation) must force resolution even if quoted
             }
 
             // Lookup should not auto-execute continuations; it only resolves.
@@ -1472,7 +1472,7 @@ case Operation::Suspend: {
                     continue_ = false;  // Reset continue flag at loop start
 
                     // Evaluate condition using ExecuteContinuationInline
-                    ExecuteContinuationInline(condition);
+                    ExecuteContinuationInlineAndDrain(condition);
 
                     // Check condition result
                     if (data_->Empty() || !PopBool()) {
@@ -1480,7 +1480,7 @@ case Operation::Suspend: {
                     }
 
                     // Execute body using ExecuteContinuationInline
-                    ExecuteContinuationInline(body);
+                    ExecuteContinuationInlineAndDrain(body);
 
                     // Check for break after body execution
                     if (break_) {
@@ -1595,7 +1595,7 @@ case Operation::Suspend: {
                         }
 
                     // Execute body inline (handles suspend/replace/resume)
-                    ExecuteContinuationInline(bodyCont);
+                    ExecuteContinuationInlineAndDrain(bodyCont);
 
                         // Handle control flow
                         if (break_) {
@@ -1646,7 +1646,7 @@ case Operation::Suspend: {
                     Pointer<Continuation> bodyCont = body;
 
                     // Execute initialization
-                    ExecuteContinuationInline(initCont);
+                    ExecuteContinuationInlineAndDrain(initCont);
 
                     // Main loop
                     break_ = false;
@@ -1654,14 +1654,14 @@ case Operation::Suspend: {
                         continue_ = false;
 
                         // Check condition
-                        ExecuteContinuationInline(condCont);
+                        ExecuteContinuationInlineAndDrain(condCont);
 
                         if (data_->Empty() || !PopBool()) {
                             break;
                         }
 
                         // Execute body
-                        ExecuteContinuationInline(bodyCont);
+                        ExecuteContinuationInlineAndDrain(bodyCont);
 
                         if (break_) {
                             break_ = false;
@@ -1674,7 +1674,7 @@ case Operation::Suspend: {
                         continue_ = false;
 
                         // Execute increment (even with continue)
-                        ExecuteContinuationInline(incrCont);
+                        ExecuteContinuationInlineAndDrain(incrCont);
                     }
                 }
             } catch (const Exception::Base& e) {
@@ -1725,7 +1725,7 @@ case Operation::Suspend: {
                     continue_ = false;  // Reset continue flag at loop start
 
                     // Execute body using ExecuteContinuationInline
-                    ExecuteContinuationInline(body);
+                    ExecuteContinuationInlineAndDrain(body);
 
                     // Check for break after body execution
                     if (break_) {
@@ -1740,7 +1740,7 @@ case Operation::Suspend: {
 
                     // Evaluate condition (even if continue was hit) using
                     // ExecuteContinuationInline
-                    ExecuteContinuationInline(condition);
+                    ExecuteContinuationInlineAndDrain(condition);
 
                     // Check condition result
                 } while (!data_->Empty() && PopBool());
@@ -2318,7 +2318,7 @@ case Operation::Suspend: {
                     }
 
                     try {
-                        ExecuteContinuationInline(cont);
+                        ExecuteContinuationInlineAndDrain(cont);
                     } catch (const Exception::Base& e) {
                         KAI_TRACE_ERROR() << "ForEach: KAI exception in iteration " << i
                                           << ": " << e.ToString();
@@ -2380,7 +2380,7 @@ case Operation::Suspend: {
                     }
 
                     try {
-                        ExecuteContinuationInline(cont);
+                        ExecuteContinuationInlineAndDrain(cont);
                     } catch (const Exception::Base& e) {
                         KAI_TRACE_ERROR() << "ForEach: KAI exception in iteration " << idx
                                           << ": " << e.ToString();
@@ -2421,7 +2421,7 @@ case Operation::Suspend: {
                     // Execute the function
                     if (function.IsType<Continuation>()) {
                         Pointer<Continuation> cont = function;
-                        ExecuteContinuationInline(cont);
+                        ExecuteContinuationInlineAndDrain(cont);
                     } else {
                         Continue(function);
                     }
@@ -2459,7 +2459,7 @@ case Operation::Suspend: {
                     // Execute the function
                     if (function.IsType<Continuation>()) {
                         Pointer<Continuation> cont = function;
-                        ExecuteContinuationInline(cont);
+                        ExecuteContinuationInlineAndDrain(cont);
                     } else {
                         Continue(function);
                     }
@@ -2568,12 +2568,8 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
 
                 Eval(obj);
 
-                if (continuation_ != cont) {
+                if (continuation_.GetHandle() != cont.GetHandle()) {
                     if (replace_) {
-                        if (pushContext && savedCont.Exists() &&
-                            !context_->Empty()) {
-                            context_->Pop();
-                        }
                         return;
                     }
 
@@ -2585,10 +2581,6 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
                     executeInline(suspendedCont, false);
 
                     if (replace_) {
-                        if (pushContext && savedCont.Exists() &&
-                            !context_->Empty()) {
-                            context_->Pop();
-                        }
                         return;
                     }
 
@@ -2645,4 +2637,62 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
     executeInline(inlineCont, true);
 }
 
+
+void Executor::ExecuteContinuationInlineAndDrain(Pointer<Continuation> cont) {
+    // Snapshot the continuation that was running before this loop-body
+    // invocation. If the body defers to a nested call (e.g. a recursive
+    // Suspend), ExecuteContinuationInline returns early with replace_ still
+    // true and continuation_ pointing at the nested call rather than having
+    // actually finished. Since raw C++ loops (WhileLoop/ForLoop/DoLoop/
+    // ForEach) drive ExecuteContinuationInline directly instead of going
+    // through the top-level Run()/Continue() loop, nothing else will ever
+    // drive that pending call to completion -- so we do it here ourselves,
+    // using the existing continuation machinery in an explicit loop (not C++
+    // recursion, so no stack-depth risk from deep call chains). We stop the
+    // instant control would return to the outer continuation, since resuming
+    // that belongs to whoever called us, not to this drain.
+    Value<Continuation> outer = continuation_;
+    Handle outerHandle = outer.Exists() ? outer.GetHandle() : Handle(0);
+
+    ExecuteContinuationInline(cont);
+
+    std::cerr << "[Drain3] entry: continuation_.Exists()=" << continuation_.Exists()
+              << " ==outer=" << (continuation_.Exists() ? (continuation_.GetHandle() == outerHandle) : false)
+              << " code.Exists()=" << (continuation_.Exists() ? continuation_->GetCode().Exists() : false)
+              << " code.Size()=" << ((continuation_.Exists() && continuation_->GetCode().Exists()) ? continuation_->GetCode()->Size() : -1)
+              << " index=" << ((continuation_.Exists() && continuation_->index.Exists()) ? ConstDeref<int>(continuation_->index) : -1)
+              << std::endl;
+    if (continuation_.Exists() && continuation_->GetCode().Exists()) {
+        auto codeArr = continuation_->GetCode();
+        for (int _i = 0; _i < codeArr->Size(); ++_i) {
+            Object _o = codeArr->At(_i);
+            std::cerr << "[Drain5]   slot[" << _i << "] exists=" << _o.Exists() << " valid=" << _o.Valid()
+                       << " typeNum=" << _o.GetTypeNumber().value
+                       << " str=" << (_o.Exists() ? _o.ToString() : "<none>") << std::endl;
+        }
+    }
+
+    // Keep going until control actually returns to the outer continuation,
+    // regardless of replace_ -- replace_ only tells us a nested call was
+    // pending when ExecuteContinuationInline returned; it is not true for
+    // every remaining instruction of that nested call's own body.
+    while (continuation_.Valid() && continuation_.Exists() &&
+           continuation_.GetHandle() != outerHandle) {
+        replace_ = false;
+        break_ = false;
+        Object next;
+        std::cerr << "[Drain4] pre-Next: code.Size()=" << continuation_->GetCode()->Size() << " index=" << ConstDeref<int>(continuation_->index) << " handle=" << continuation_.GetHandle() << std::endl;
+        if (!continuation_->Next(next)) {
+            std::cerr << "[Drain3] Next() false, calling NextContinuation" << std::endl;
+            NextContinuation();
+            continue;
+        }
+        if (!next.Exists()) {
+            continue;
+        }
+        Eval(next);
+    }
+    replace_ = false;
+    break_ = false;
+}
 KAI_END
