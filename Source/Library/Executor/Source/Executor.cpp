@@ -356,16 +356,21 @@ Object Executor::TryResolve(Label const &label) const {
 
     // search in parent scopes...
     Stack const &scopes = *context_;
+    std::cerr << "[RP-LOOP] label=" << label.ToString() << " scopes.Size()=" << scopes.Size() << std::endl;
     for (int N = 0; N < scopes.Size(); ++N) {
         Pointer<Continuation> cont = scopes.At(N);
         if (!cont.Exists()) continue;
 
         Object scope = cont->GetScope();
+        std::cerr << "[RP-ITER] N=" << N << " cont.Exists()=" << cont.Exists() << " scope.Exists()=" << scope.Exists() << " scope.Has(label)=" << (scope.Exists() ? scope.Has(label) : false) << std::endl;
         // Try both Has (direct children) and HasChild (recursive search)
-        if (scope.Exists() && scope.Has(label))
-            std::cerr << "[TR3] found in parent context_ scope" << std::endl; return scope.Get(label);
-        if (scope.Exists() && scope.HasChild(label))
+        if (scope.Exists() && scope.Has(label)) {
+            std::cerr << "[TR3] found in parent context_ scope" << std::endl;
+            return scope.Get(label);
+        }
+        if (scope.Exists() && scope.HasChild(label)) {
             return scope.GetChild(label);
+        }
     }
 
     // Finally, search the tree.

@@ -209,6 +209,7 @@ void Executor::Perform(Operation::Type op) {
 
         case Operation::Break:
             break_ = true;
+            loopBreak_ = true;  // dedicated flag for WhileLoop, survives drain resets
             break;
 
         case Operation::Continue:
@@ -802,7 +803,7 @@ case Operation::Suspend: {
 
             // If it's an identifier (Label/Pathname), resolve it first
             if (obj.IsType<Label>() || obj.IsType<Pathname>()) {
-                obj = Resolve(obj, /*ignoreQuote=*/true);  // Retreive (& operation) must force resolution even if quoted
+                obj = Resolve(obj);  // Retreive (& operation) must force resolution even if quoted
             }
 
             // Lookup should not auto-execute continuations; it only resolves.
@@ -1468,6 +1469,7 @@ case Operation::Suspend: {
 
                 // Execute while loop inline
                 break_ = false;  // Reset break flag
+                loopBreak_ = false;
                 while (true) {
                     continue_ = false;  // Reset continue flag at loop start
 
@@ -1483,7 +1485,8 @@ case Operation::Suspend: {
                     ExecuteContinuationInlineAndDrain(body);
 
                     // Check for break after body execution
-                    if (break_) {
+                    if (loopBreak_) {
+                        loopBreak_ = false;
                         break_ = false;  // Reset for next loop
                         break;           // Exit the while loop
                     }
@@ -1598,7 +1601,8 @@ case Operation::Suspend: {
                     ExecuteContinuationInlineAndDrain(bodyCont);
 
                         // Handle control flow
-                        if (break_) {
+                        if (loopBreak_) {
+                            loopBreak_ = false;
                             break_ = false;
                             break;
                         }
@@ -1663,7 +1667,8 @@ case Operation::Suspend: {
                         // Execute body
                         ExecuteContinuationInlineAndDrain(bodyCont);
 
-                        if (break_) {
+                        if (loopBreak_) {
+                            loopBreak_ = false;
                             break_ = false;
                             break;
                         }
@@ -1728,7 +1733,8 @@ case Operation::Suspend: {
                     ExecuteContinuationInlineAndDrain(body);
 
                     // Check for break after body execution
-                    if (break_) {
+                    if (loopBreak_) {
+                        loopBreak_ = false;
                         break_ = false;  // Reset for next loop
                         break;           // Exit the do-while loop
                     }
@@ -2331,7 +2337,8 @@ case Operation::Suspend: {
                     }
 
                     // Check for break
-                    if (break_) {
+                    if (loopBreak_) {
+                        loopBreak_ = false;
                         break_ = false;
                         break;
                     }
@@ -2392,7 +2399,8 @@ case Operation::Suspend: {
                     }
 
                     // Check for break
-                    if (break_) {
+                    if (loopBreak_) {
+                        loopBreak_ = false;
                         break_ = false;
                         break;
                     }
@@ -2427,7 +2435,8 @@ case Operation::Suspend: {
                     }
 
                     // Check for break
-                    if (break_) {
+                    if (loopBreak_) {
+                        loopBreak_ = false;
                         break_ = false;
                         break;
                     }
@@ -2465,7 +2474,8 @@ case Operation::Suspend: {
                     }
 
                     // Check for break
-                    if (break_) {
+                    if (loopBreak_) {
+                        loopBreak_ = false;
                         break_ = false;
                         break;
                     }
@@ -2586,9 +2596,9 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
 
                     // Do not collapse stack on continuation completion.
 
-                    if (!context_->Empty()) {
-                        context_->Pop();
-                    }
+                    // [Fix9] removed stray context_->Pop() that discarded the pending trailing
+                    // instruction's resume point (same class of bug as Fix3) - was:
+                    // if (!context_->Empty()) { context_->Pop(); }
 
                     continuation_ = cont;
                     *cont->index = resumeIndex;
@@ -2693,6 +2703,5 @@ void Executor::ExecuteContinuationInlineAndDrain(Pointer<Continuation> cont) {
         Eval(next);
     }
     replace_ = false;
-    break_ = false;
 }
 KAI_END
