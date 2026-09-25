@@ -1,4 +1,4 @@
-﻿#include "KAI/Language/Common/LexerBase.h"
+#include "KAI/Language/Common/LexerBase.h"
 
 KAI_BEGIN
 
@@ -20,7 +20,7 @@ void LexerBase::CreateLines() {
 }
 
 char LexerBase::Current() const {
-    if (lineNumber_ == (int)lines_.size()) return 0;
+    if (lineNumber_ >= (int)lines_.size()) return 0;
 
     return Line()[offset_];
 }
@@ -54,7 +54,7 @@ char LexerBase::Next() {
     } else
         ++offset_;
 
-    if (lineNumber_ == (int)lines_.size()) return 0;
+    if (lineNumber_ >= (int)lines_.size()) return 0;
 
     return Line()[offset_];
 }

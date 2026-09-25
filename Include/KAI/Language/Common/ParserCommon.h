@@ -127,6 +127,7 @@ class ParserCommon : public ProcessCommon {
     }
 
     AstNodePtr Top() {
+        if (stack_.empty()) { KAI_THROW_0(EmptyStack); }
         return stack_.back();
     }
 
@@ -134,6 +135,8 @@ class ParserCommon : public ProcessCommon {
         Push(NewNode(Consume()));
         return true;
     }
+
+    static TokenNode const &EndToken() { static const TokenNode kEnd; return kEnd; }
 
     TokenNode const &Next() {
         // First check if tokens vector is empty
@@ -149,7 +152,7 @@ class ParserCommon : public ProcessCommon {
             KAI_TRACE_ERROR_1(Fail("Next token index out of range"));
         }
 
-        return tokens_[current];
+        return current < tokens_.size() ? tokens_[current] : EndToken();
     }
 
     TokenNode const &Last() {
@@ -163,7 +166,7 @@ class ParserCommon : public ProcessCommon {
             KAI_TRACE_ERROR_1(Fail("No previous token available"));
         }
 
-        return tokens_[current - 1];
+        return (current > 0 && current - 1 < tokens_.size()) ? tokens_[current - 1] : EndToken();
     }
 
     TokenNode const &Current() const {
@@ -176,7 +179,7 @@ class ParserCommon : public ProcessCommon {
             KAI_TRACE_ERROR_1(Fail("Token index out of range"));
         }
 
-        return tokens_[current];
+        return current < tokens_.size() ? tokens_[current] : EndToken();
     }
 
     bool Current(TokenNode node) const {
@@ -201,7 +204,7 @@ class ParserCommon : public ProcessCommon {
             KAI_TRACE_ERROR() << "Unexpected end of tokens stream";
         }
 
-        return tokens_[current + 1];
+        return current + 1 < tokens_.size() ? tokens_[current + 1] : EndToken();
     }
 
     bool PeekConsume(TokenEnum ty) {
@@ -231,7 +234,7 @@ class ParserCommon : public ProcessCommon {
             KAI_TRACE_ERROR_1(Fail("Unexpected end of file"));
         }
 
-        return tokens_[current++];
+        return current < tokens_.size() ? tokens_[current++] : EndToken();
     }
 
     bool Try(std::vector<TokenEnum> const &types) {

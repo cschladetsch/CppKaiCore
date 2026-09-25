@@ -1,4 +1,4 @@
-﻿#include <cctype>
+#include <cctype>
 #include <cstdio>
 #include <iostream>
 #include <sstream>
@@ -806,6 +806,7 @@ void Executor::Continue(Value<Continuation> C) {
 }
 
 void Executor::NextContinuation() {
+    returning_ = false;
     if (!context_.Valid() || !context_.Exists()) {
         KAI_TRACE_ERROR()
             << "NextContinuation: Invalid or non-existent context stack";

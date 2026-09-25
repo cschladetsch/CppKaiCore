@@ -262,6 +262,7 @@ private:
     bool break_;      // Set by Break operation to exit loops
     bool continue_;   // Set by Continue operation to skip to next loop iteration
     bool loopBreak_ = false;  // Set ONLY by Operation::Break; survives drain-loop resets so WhileLoop can observe a genuine loop break even after an intervening function call (Suspend/Return share break_, which is expected to be absorbed mid-drain - loopBreak_ is not).
+    bool returning_ = false;  // set by Return; survives drain resets
     bool replace_;    // Set by Replace operation to replace current continuation
     Tree *tree_;
     int traceLevel_;

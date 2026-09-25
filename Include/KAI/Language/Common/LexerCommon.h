@@ -161,7 +161,7 @@ class LexerCommon : public LexerBase {
         int beforeContext = 2;
         int afterContext = 2;
 
-        const LexerBase &lex = *tok.lexer;
+        if (tok.lexer == nullptr) { return std::string(buff); }        const LexerBase &lex = *tok.lexer;
         int start = std::max(0, tok.lineNumber - beforeContext);
         int end = std::min((int)lex.GetLines().size() - 1,
                            tok.lineNumber + afterContext);

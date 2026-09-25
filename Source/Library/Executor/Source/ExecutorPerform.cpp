@@ -1,4 +1,4 @@
-﻿#include <KAI/Core/BuiltinTypes.h>
+#include <KAI/Core/BuiltinTypes.h>
 #include <KAI/Core/Exception.h>
 #include <KAI/Core/Tree.h>
 #include <KAI/Executor/BinBase.h>
@@ -461,6 +461,7 @@ case Operation::Suspend: {
             // inspect the result.
             context_->Clear();
             continuation_ = Object();
+            returning_ = true;  // `...` unwinds enclosing loops as well
             break_ = true;
             break;
 
@@ -1437,6 +1438,7 @@ case Operation::Suspend: {
         }
 
         case Operation::WhileLoop: {
+            returning_ = false;
             // ( condition body -- )
             // While condition is true, run body.
             KAI_TRACE() << "WhileLoop: Getting continuations from stack";
@@ -1485,9 +1487,9 @@ case Operation::Suspend: {
                     ExecuteContinuationInlineAndDrain(body);
 
                     // Check for break after body execution
-                    if (loopBreak_) {
+                    if (loopBreak_ || returning_) {
                         loopBreak_ = false;
-                        break_ = false;  // Reset for next loop
+                        break_ = returning_;  // Reset for next loop
                         break;           // Exit the while loop
                     }
                     // If continue_ is set, it just goes to next iteration
@@ -1508,6 +1510,7 @@ case Operation::Suspend: {
         }
 
         case Operation::ForLoop: {
+            returning_ = false;
             KAI_TRACE() << "ForLoop: Starting execution";
 
             try {
@@ -1601,9 +1604,9 @@ case Operation::Suspend: {
                     ExecuteContinuationInlineAndDrain(bodyCont);
 
                         // Handle control flow
-                        if (loopBreak_) {
+                        if (loopBreak_ || returning_) {
                             loopBreak_ = false;
-                            break_ = false;
+                            break_ = returning_;
                             break;
                         }
 
@@ -1667,9 +1670,9 @@ case Operation::Suspend: {
                         // Execute body
                         ExecuteContinuationInlineAndDrain(bodyCont);
 
-                        if (loopBreak_) {
+                        if (loopBreak_ || returning_) {
                             loopBreak_ = false;
-                            break_ = false;
+                            break_ = returning_;
                             break;
                         }
 
@@ -1694,6 +1697,7 @@ case Operation::Suspend: {
         }
 
         case Operation::DoLoop: {
+            returning_ = false;
             // ( body cond -- )
             // Do-while loop: execute body first, then check condition
             KAI_TRACE() << "DoLoop: Getting continuations from stack";
@@ -1733,9 +1737,9 @@ case Operation::Suspend: {
                     ExecuteContinuationInlineAndDrain(body);
 
                     // Check for break after body execution
-                    if (loopBreak_) {
+                    if (loopBreak_ || returning_) {
                         loopBreak_ = false;
-                        break_ = false;  // Reset for next loop
+                        break_ = returning_;  // Reset for next loop
                         break;           // Exit the do-while loop
                     }
 
@@ -2220,6 +2224,7 @@ case Operation::Suspend: {
 
             // Signal that we want to return from this continuation
             break_ = true;
+            returning_ = true;
 
             // Push the return value back on the stack for the caller
             if (returnValue.Exists()) {
@@ -2269,6 +2274,7 @@ case Operation::Suspend: {
         }
 
         case Operation::ForEach: {
+            returning_ = false;
             // ForEach operation
             // Stack: ( collection function -- result_array )
             KAI_TRACE() << "ForEach: Starting foreach operation";
@@ -2337,9 +2343,9 @@ case Operation::Suspend: {
                     }
 
                     // Check for break
-                    if (loopBreak_) {
+                    if (loopBreak_ || returning_) {
                         loopBreak_ = false;
-                        break_ = false;
+                        break_ = returning_;
                         break;
                     }
 
@@ -2399,9 +2405,9 @@ case Operation::Suspend: {
                     }
 
                     // Check for break
-                    if (loopBreak_) {
+                    if (loopBreak_ || returning_) {
                         loopBreak_ = false;
-                        break_ = false;
+                        break_ = returning_;
                         break;
                     }
 
@@ -2435,9 +2441,9 @@ case Operation::Suspend: {
                     }
 
                     // Check for break
-                    if (loopBreak_) {
+                    if (loopBreak_ || returning_) {
                         loopBreak_ = false;
-                        break_ = false;
+                        break_ = returning_;
                         break;
                     }
 
@@ -2474,9 +2480,9 @@ case Operation::Suspend: {
                     }
 
                     // Check for break
-                    if (loopBreak_) {
+                    if (loopBreak_ || returning_) {
                         loopBreak_ = false;
-                        break_ = false;
+                        break_ = returning_;
                         break;
                     }
 
@@ -2578,13 +2584,13 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
 
                 Eval(obj);
 
-                if (continuation_.GetHandle() != cont.GetHandle()) {
+                if (!continuation_.Exists() || continuation_.GetHandle() != cont.GetHandle()) {
                     if (replace_) {
                         return;
                     }
 
                     int resumeIndex = ConstDeref<int>(cont->index);
-                    bool savedBreak = break_;
+                    bool savedBreak = break_; bool savedReturning = returning_;
                     Pointer<Continuation> suspendedCont =
                         Object(continuation_);
 
@@ -2602,7 +2608,7 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
 
                     continuation_ = cont;
                     *cont->index = resumeIndex;
-                    break_ = savedBreak;
+                    break_ = savedBreak; returning_ = savedReturning;
                 }
             }
         } catch (...) {
@@ -2702,6 +2708,7 @@ void Executor::ExecuteContinuationInlineAndDrain(Pointer<Continuation> cont) {
         }
         Eval(next);
     }
+    if (!continuation_.Exists()) continuation_ = outer;  // `...` nulled it; keep a valid current continuation
     replace_ = false;
 }
 KAI_END

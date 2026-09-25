@@ -18,7 +18,7 @@ class LexerBase : public ProcessCommon {
            if (lines_.empty() || n >= lines_.size()) {
                KAI_THROW_2(OutOfBounds, n, 0);
            }
-           return lines_[n];
+           static const std::string kEmptyLine; return static_cast<size_t>(n) < lines_.size() ? lines_[n] : kEmptyLine;
        }
 
     const Lines &GetLines() const {
