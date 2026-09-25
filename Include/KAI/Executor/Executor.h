@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <KAI/Core/BuiltinTypes/Stack.h>
 #include <KAI/Core/Object/Reflected.h>
@@ -29,6 +29,7 @@ struct Executor : Reflected {
     [[nodiscard]] Object GetScope() const;
 
     void SetContinuation(Value<Continuation>);
+    [[nodiscard]] Value<Continuation> GetContinuation() const { return continuation_; }
     void Continue();
     void Continue(Value<Continuation>);
     void ContinueOnly(Value<Continuation> c);
