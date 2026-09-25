@@ -1,4 +1,4 @@
-#include <fstream>
+﻿#include <fstream>
 #include <iostream>
 
 #include "KAI/Core/BuiltinTypes/Pair.h"
@@ -51,13 +51,13 @@ Vector3 AddVector3(Vector3 vec, Vector3 addition) {
 }
 
 void WriteToFile(String filename, Object Q) {
-    std::fstream file(filename.c_str(), std::ios::out);
-    file << Q.ToString().c_str();
+    std::fstream file(filename.CStr(), std::ios::out);
+    file << Q.ToString().StdString();
     file.close();
 }
 
 String ReadFile(String filename) {
-    std::fstream file(filename.c_str(), std::ios::in);
+    std::fstream file(filename.CStr(), std::ios::in);
     if (!file) KAI_THROW_1(FileNotFound, filename);
 
     char line[2000];
@@ -72,13 +72,13 @@ String ReadFile(String filename) {
 }
 
 void Printf(String fmt, Array items) {
-    for (int n = 0; n < fmt.size(); ++n) {
+    for (int n = 0; n < fmt.Size(); ++n) {
         char ch = fmt[n];
         if (ch == '#') {
             int num = fmt[++n] - '0';
             StringStream str;
             str << items.At(num);
-            std::cout << str.ToString().c_str();
+            std::cout << str.ToString().StdString();
             continue;
         }
 
@@ -86,11 +86,11 @@ void Printf(String fmt, Array items) {
     }
 }
 
-void Print(Object Q) { std::cout << Q.ToString().c_str(); }
+void Print(Object Q) { std::cout << Q.ToString().StdString(); }
 
-void print(Object Q) { std::cout << Q.ToString().c_str() << std::endl; }
+void print(Object Q) { std::cout << Q.ToString().StdString() << std::endl; }
 
-void PrintXml(Object Q) { std::cout << Q.ToXmlString().c_str() << std::endl; }
+void PrintXml(Object Q) { std::cout << Q.ToXmlString().CStr() << std::endl; }
 
 Object UpCast(Object Q) {
     if (!Q.Exists()) return Object();

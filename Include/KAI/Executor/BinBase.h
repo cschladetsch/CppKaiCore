@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/BuiltinTypes/Array.h>
 #include <KAI/Core/BuiltinTypes/String.h>
@@ -9,37 +9,38 @@
 KAI_BEGIN
 
 /// Defines what goes into the /bin folder at runtime setup
-namespace Bin {
+namespace Bin
+{
 void Help();
-Object GetMethods(Object Q);
-Object GetProperties(Object Q);
+Object GetMethods(Object q);
+Object GetProperties(Object q);
 Vector3 ScaleVector3(Vector3 vec, float scalar);
 Vector3 AddVector3(Vector3 vec, Vector3 addition);
-void WriteToFile(String filename, Object Q);
+void WriteToFile(String filename, Object q);
 String ReadFile(String filename);
 void Printf(String fmt, Array items);
-void Print(Object Q);
-void print(Object Q);
-void PrintXml(Object Q);
-Object UpCast(Object Q);
-void SetClean(Object Q, bool D);
-bool IsDirty(Object Q);
-bool IsClean(Object Q);
-bool IsConst(Object Q);
-void Assert(bool B);
-Object Freeze(Object Q);
-Object Thaw(Object Q);
-String ToString(Object Q);
-String ToXmlString(Object Q);
+void Print(Object q);
+void Print(Object q);
+void PrintXml(Object q);
+Object UpCast(Object q);
+void SetClean(Object q, bool d);
+bool IsDirty(Object q);
+bool IsClean(Object q);
+bool IsConst(Object q);
+void Assert(bool b);
+Object Freeze(Object q);
+Object Thaw(Object q);
+String ToString(Object q);
+String ToXmlString(Object q);
 String Version();
 void Quit();
-void ExitToOS(int N);
+void ExitToOS(int n);
 Object RunOne(Object object);
 Object RunAllTests(Object object);
 Object TypeNumberToClass(Object tn);
-Object Describe(Object Q);
-String info(Object object);
-void AddFunctions(Object Q);
-}  // namespace Bin
+Object Describe(Object q);
+String Info(Object object);
+void AddFunctions(Object q);
+} // namespace Bin
 
 KAI_END

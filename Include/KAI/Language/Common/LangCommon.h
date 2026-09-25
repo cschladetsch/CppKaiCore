@@ -14,20 +14,20 @@ KAI_BEGIN
 template <class Tr>
 class Lang : public Process {
    public:
-    typedef Tr Translator;
-    typedef typename Tr::Lexer Lexer;
-    typedef typename Tr::Parser Parser;
+       using Translator = Tr;
+       using Lexer = typename Tr::Lexer;
+       using Parser = typename Tr::Parser;
 
    protected:
-    Registry &reg;
-    std::shared_ptr<Lexer> lex;
-    std::shared_ptr<Parser> parse;
-    std::shared_ptr<Translator> trans;
-    Pointer<Executor> exec;
+       Registry& reg_;
+       std::shared_ptr<Lexer> lex_;
+       std::shared_ptr<Parser> parse_;
+       std::shared_ptr<Translator> trans_;
+       Pointer<Executor> exec_;
 
    public:
     Lang(const Lang &) = delete;
-    Lang(Registry &r) : reg(r) {}
+    Lang(Registry& r) : reg_(r) {}
 
     virtual Pointer<Executor> Exec(const char *text,
                                    Structure st = Structure::Expression) = 0;

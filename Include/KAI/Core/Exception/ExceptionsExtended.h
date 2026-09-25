@@ -1,146 +1,140 @@
 #pragma once
 
+#include <utility>
+
 #include "KAI/Core/Object/Object.h"
 #include "KAI/Core/Pathname.h"
 
 KAI_BEGIN
 
-namespace Exception {
+namespace exception
+{
 struct CannotResolve : Base {
     Object object;
     Label label;
     Pathname path;
-    CannotResolve(const FileLocation &L, Object const &Q)
-        : Base(L, "CannotResolve"), object(Q) {}
-    CannotResolve(const FileLocation &L, Label const &Q)
-        : Base(L, "CannotResolve"), label(Q) {}
-    CannotResolve(const FileLocation &L, Pathname const &Q)
-        : Base(L, "CannotResolve"), path(Q) {}
-    void WriteExtendedInformation(StringStream &) const;
+    CannotResolve(const FileLocation& l, Object const& q) : Base(l, "CannotResolve"), object(q) {}
+    CannotResolve(const FileLocation& l, Label q) : Base(l, "CannotResolve"), label(std::move(q)) {}
+    CannotResolve(const FileLocation& l, Pathname q) : Base(l, "CannotResolve"), path(std::move(q)) {}
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct InvalidPathname : Base {
     String text;
-    InvalidPathname(const FileLocation &L, const String &T)
-        : Base(L, "InvalidPathname"), text(T) {}
-    void WriteExtendedInformation(StringStream &) const;
+    InvalidPathname(const FileLocation& l, const String& t) : Base(l, "InvalidPathname"), text(t) {}
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct InvalidIdentifier : Base {
     Object what;
-    InvalidIdentifier(const FileLocation &L, const Object &T)
-        : Base(L, "InvalidIdentifier"), what(T) {}
-    void WriteExtendedInformation(StringStream &) const;
+    InvalidIdentifier(const FileLocation& l, const Object& t) : Base(l, "InvalidIdentifier"), what(t) {}
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct NotImplemented : Base {
     String text;
-    NotImplemented(const FileLocation &L, const char *T = "<unnamed>")
-        : Base(L, "Not Implemented"), text(T) {}
-    void WriteExtendedInformation(StringStream &) const;
+    NotImplemented(const FileLocation& l, const char* t = "<unnamed>") : Base(l, "Not Implemented"), text(t) {}
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct ObjectNotInTree : Base {
     Object object;
-    ObjectNotInTree(const FileLocation &L, Object const &Q)
-        : Base(L, "Object not in tree"), object(Q) {}
-    void WriteExtendedInformation(StringStream &) const;
+    ObjectNotInTree(const FileLocation& l, Object const& q) : Base(l, "Object not in tree"), object(q) {}
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct InternalError : Base {
-    InternalError(const FileLocation &L, const char *T) : Base(L, T) {}
+    InternalError(const FileLocation& l, const char* t) : Base(l, t) {}
 };
 
 struct UnknownMethod : Base {
-    String name_;
-    String class_name_;
-    UnknownMethod(const FileLocation &L, const String &N, const String &B)
-        : Base(L, "Unknown Method"), name_(N), class_name_(B) {}
-    void WriteExtendedInformation(StringStream &) const;
+    String name;
+    String className;
+    UnknownMethod(const FileLocation& l, const String& n, const String& b)
+        : Base(l, "Unknown Method"), name(n), className(b)
+    {
+    }
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct UnknownHandle : Base {
     Handle handle;
-    UnknownHandle(const FileLocation &L, Handle N)
-        : Base(L, "Unknown Handle"), handle(N) {}
-    void WriteExtendedInformation(StringStream &) const;
+    UnknownHandle(const FileLocation& l, Handle n) : Base(l, "Unknown Handle"), handle(n) {}
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct InvalidStringLiteral : Base {
     String text;
-    InvalidStringLiteral(const FileLocation &L, const String &T)
-        : Base(L, "Invalid string literal"), text(T) {}
-    void WriteExtendedInformation(StringStream &) const;
+    InvalidStringLiteral(const FileLocation& l, const String& t) : Base(l, "Invalid string literal"), text(t) {}
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 template <class T = meta::Null>
 struct UnknownClass : Base {
-    String name_;
-    Type::Number type_number;
-    UnknownClass(const FileLocation &L, const String &N)
-        : Base(L, "Unknown Class"), name_(N) {}
-    UnknownClass(const FileLocation &L, Type::Number N)
-        : Base(L, "Unknown Class"), type_number(N) {}
-    UnknownClass(const FileLocation &L)
-        : Base(L, "Unknown Class"),
-          type_number(Type::Traits<T>::Number),
-          name_("TODO boost::typeindex") {}
-    void WriteExtendedInformation(StringStream &S) const {
-        S << "name_=" << name_ << ", type_number_=" << type_number.value;
+    String name;
+    Type::Number typeNumber;
+    UnknownClass(const FileLocation& l, const String& n) : Base(l, "Unknown Class"), name(n) {}
+    UnknownClass(const FileLocation& l, Type::Number n) : Base(l, "Unknown Class"), typeNumber(n) {}
+    UnknownClass(const FileLocation& l)
+        : Base(l, "Unknown Class"), typeNumber(Type::Traits<T>::Number), name("TODO boost::typeindex")
+    {
+    }
+    void WriteExtendedInformation(StringStream& s) const override
+    {
+        s << "name_=" << name << ", type_number_=" << typeNumber.value;
     }
 };
 
 struct CannotNew : Base {
     Object arg;
-    CannotNew(const FileLocation &L, const Object &Q)
-        : Base(L, "Cannot new"), arg(Q) {}
-    void WriteExtendedInformation(StringStream &) const;
+    CannotNew(const FileLocation& l, const Object& q) : Base(l, "Cannot new"), arg(q) {}
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct AssertionFailed : Base {
-    AssertionFailed(const FileLocation &L) : Base(L, "AssertionFailed") {}
+    AssertionFailed(const FileLocation& l) : Base(l, "AssertionFailed") {}
 };
 
 struct UnknownKey : Base {
     Object key;
-    UnknownKey(const FileLocation &L, Object K)
-        : Base(L, "Unknown key in Map"), key(K) {}
-    void WriteExtendedInformation(StringStream &) const;
+    UnknownKey(const FileLocation& l, const Object& k) : Base(l, "Unknown key in Map"), key(k) {}
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct BadIndex : Base {
     int index;
-    BadIndex(const FileLocation &L, int N) : Base(L, "Bad Index"), index(N) {}
-    void WriteExtendedInformation(StringStream &) const;
+    BadIndex(const FileLocation& l, int n) : Base(l, "Bad Index"), index(n) {}
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct BadUpCast : Base {
-    BadUpCast(const FileLocation &L) : Base(L, "BadUpCast") {}
+    BadUpCast(const FileLocation& l) : Base(l, "BadUpCast") {}
 };
 
 struct FileNotFound : Base {
     String filename;
-    FileNotFound(const FileLocation &L, String const &F)
-        : Base(L, "FileNotFound"), filename(F) {}
-    void WriteExtendedInformation(StringStream &) const;
+    FileNotFound(const FileLocation& l, String const& f) : Base(l, "FileNotFound"), filename(f) {}
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct UnknownProperty : Base {
     Label klass;
     Label prop;
-    UnknownProperty(const FileLocation &L, Label const &K, Label const &P)
-        : Base(L, "UnknownProperty"), klass(K), prop(P) {}
-    void WriteExtendedInformation(StringStream &) const;
+    UnknownProperty(const FileLocation& l, Label k, Label p)
+        : Base(l, "UnknownProperty"), klass(std::move(k)), prop(std::move(p))
+    {
+    }
+    void WriteExtendedInformation(StringStream& /*unused*/) const override;
 };
 
 struct NoInput : Base {
-    NoInput(const FileLocation &L) : Base(L, "UnknownProperty") {}
+    NoInput(const FileLocation& l) : Base(l, "UnknownProperty") {}
 };
 
 struct DivideByZero : Base {
-    DivideByZero(const FileLocation &L) : Base(L, "DivideByZero") {}
+    DivideByZero(const FileLocation& l) : Base(l, "DivideByZero") {}
 };
 
-}  // namespace Exception
+} // namespace exception
 
 KAI_END

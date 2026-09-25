@@ -8,6 +8,6 @@
 KAI_BEGIN
 
 // TODO: use unordered map
-typedef std::map<Label, Object> Dictionary;
+using Dictionary = std::map<Label, Object>;
 
 KAI_END

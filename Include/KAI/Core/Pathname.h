@@ -4,6 +4,7 @@
 #include <KAI/Core/Type/Traits.h>
 
 #include <list>
+#include <utility>
 
 #include "KAI/Core/Object/Label.h"
 
@@ -13,58 +14,69 @@ KAI_BEGIN
 class Pathname {
    public:
     struct Literals {
-        static const String::Char Parent;
-        static const String::Char This;
-        static const String::Char Separator;
-        static const String::Char Quote;
-        static const String::Char All[];
-        static const String::Char AllButQuote[];
+        static const String::Char kParent;
+        static const String::Char kThis;
+        static const String::Char kSeparator;
+        static const String::Char kQuote;
+        static const String::Char kAll[];
+        static const String::Char kAllButQuote[];
     };
 
     struct Element {
         enum Type { None, Quote, Separator, Parent, This, Name };
         Type type;
-        Label name_;
-        Element(Type T = None) : type(T) {}
-        Element(const Label &L) : type(Name), name_(L) {}
-        friend bool operator<(const Element &A, const Element &B) {
-            return A.type < B.type || (A.type == B.type && A.name_ < B.name_);
+        Label name;
+        Element(Type t = None) : type(t) {}
+        Element(Label l) : type(Name), name(std::move(l)) {}
+        friend bool operator<(const Element& a, const Element& b)
+        {
+            return a.type < b.type || (a.type == b.type && a.name < b.name);
         }
-        friend bool operator==(const Element &A, const Element &B) {
-            return A.type == B.type && A.name_ == B.name_;
+        friend bool operator==(const Element& a, const Element& b)
+        {
+            return a.type == b.type && a.name == b.name;
         }
     };
-    typedef std::vector<Element> Elements;
+    using Elements = std::vector<Element>;
 
-   private:
-    Elements elements;
+private:
+    Elements elements_;
 
-   public:
-    Pathname() {}
+public:
+    Pathname() = default;
     Pathname(const String &);
     Pathname(const Elements &);
 
-    bool Quoted() const;
-    bool Absolute() const;
+    [[nodiscard]] bool Quoted() const;
+    [[nodiscard]] bool Absolute() const;
 
-    Elements GetElements() const { return elements; }
+    [[nodiscard]] Elements GetElements() const
+    {
+        return elements_;
+    }
 
     void FromString(const String &);
     void FromString2(String);
-    String ToString() const;
+    [[nodiscard]] String ToString() const;
 
-    bool Empty() const;
+    [[nodiscard]] bool Empty() const;
 
-    Elements::const_iterator begin() const { return elements.begin(); }
-    Elements::const_iterator end() const { return elements.end(); }
+    [[nodiscard]] Elements::const_iterator Begin() const
+    {
+        return elements_.begin();
+    }
+    [[nodiscard]] Elements::const_iterator End() const
+    {
+        return elements_.end();
+    }
 
-    friend bool operator<(const Pathname &A, const Pathname &B);
-    friend bool operator==(const Pathname &A, const Pathname &B);
-    friend Pathname operator+(const Pathname &A, const Pathname &B);
+    friend bool operator<(const Pathname& a, const Pathname& b);
+    friend bool operator==(const Pathname& a, const Pathname& b);
+    friend Pathname operator+(const Pathname& a, const Pathname& b);
 
     static void Register(Registry &);
 
-    bool Validate() const;
+    [[nodiscard]] bool Validate() const;
     void AddElement(StringStream &, Element::Type);
 };
 
@@ -73,9 +85,9 @@ StringStream &operator>>(StringStream &, Pathname &);
 BinaryStream &operator<<(BinaryStream &, Pathname const &);
 BinaryPacket &operator>>(BinaryPacket &, Pathname &);
 
-template <class T>
-bool operator>(T const &A, T const &B) {
-    return B < A;
+template <class T> bool operator>(T const& a, T const& b)
+{
+    return b < a;
 }
 
 KAI_TYPE_TRAITS(Pathname, Number::Pathname,
@@ -87,11 +99,9 @@ Pathname GetFullname(const Object &);
 Label GetName(const Object &);
 
 void Set(Object scope, const Pathname &path, StorageBase *);
-void Set(Object scope, const Pathname &path, Object const &Q);
-void Set(Object const &root, Object const &scope, const Pathname &path,
-         Object const &Q);
-void Set(Object const &root, Object const &scope, Object const &ident,
-         Object const &Q);
+void Set(Object scope, const Pathname& path, Object const& q);
+void Set(Object const& root, Object const& scope, const Pathname& path, Object const& q);
+void Set(Object const& root, Object const& scope, Object const& ident, Object const& q);
 
 Object Get(Object scope, const Pathname &path);
 Object Get(Object const &root, Object const &scope, const Pathname &path);

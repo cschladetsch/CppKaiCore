@@ -13,33 +13,32 @@ struct Executor;
 
 class Continuation : public Reflected {
    public:
-    typedef Pointer</*const*/ Array> Code;
+       using Code = Pointer</*const*/ Array>;
 
-    Object scope;
-    Pointer<Array> code;
-    Pointer<Array> args;
-    Pointer<String> source_code;
-    Pointer<int> index;
-    Pointer<bool> entered;
+       Object scope;
+       Pointer<Array> code;
+       Pointer<Array> args;
+       Pointer<String> sourceCode;
+       Pointer<int> index;
+       Pointer<bool> entered;
 
-    // if true, this is a 'top-level' continuation, so
-    // name_ resolution should stop here
-    //
-    // I hate this idea. needs to be re-thought through clearly.
-    Pointer<bool> scopeBreak;
+       // if true, this is a 'top-level' continuation, so
+       // name_ resolution should stop here
+       //
+       // I hate this idea. needs to be re-thought through clearly.
+       Pointer<bool> scopeBreak;
 
-   public:
-    void Create();
-    bool Destroy();
+       void Create() override;
+       bool Destroy() override;
 
-    template <class T>
-    Pointer<T> New() const {
-        return Self->GetRegistry()->New<T>();
-    }
+       template <class T> Pointer<T> New() const
+       {
+           return self->GetRegistry()->New<T>();
+       }
 
     template <class T>
     Pointer<T> New(const T &val) const {
-        return Self->GetRegistry()->New<T>(val);
+        return self->GetRegistry()->New<T>(val);
     }
 
     void SetCode(Code);
@@ -51,16 +50,21 @@ class Continuation : public Reflected {
 
     Code &GetCode() { return code; }
 
-    Pointer<String> GetSourceCode() const { return source_code; }
-    void SetSourceCode(const char *C);
+    Pointer<String> GetSourceCode() const {
+        return sourceCode;
+    }
+    void SetSourceCode(const char* c);
 
-    void SetScope(Object const &Q) { scope = Q; }
+    void SetScope(Object const& q)
+    {
+        scope = q;
+    }
     Object GetScope() const { return scope; }
     bool HasScope() const { return scope.Exists(); }
 
     bool HasCode() const { return code.Exists(); }
 
-    int InitialStackDepth;
+    int initialStackDepth;
 
     void Enter(Executor *exec);
     void Reset();
@@ -74,28 +78,34 @@ class Continuation : public Reflected {
     void SetSpecialHandling(bool v) {
         // We store this in the 'entered' field to maintain compatibility
         // without adding extra fields
-        if (!entered.Exists())
+        if (!entered.Exists()) {
             entered = New(v);
-        else
+        } else {
             *entered = v;
+        }
     }
 
     bool GetSpecialHandling() const {
-        if (!entered.Exists()) return false;
+        if (!entered.Exists()) {
+            return false;
+        }
         return *entered;
     }
 
     // Set the instruction pointer (for jump operations)
     void SetInstructionPointer(int pos) {
-        if (!index.Exists())
+        if (!index.Exists()) {
             index = New<int>(pos);
-        else
+        } else {
             *index = pos;
+        }
     }
 
     // Get the current instruction pointer
     int GetInstructionPointer() const {
-        if (!index.Exists()) return 0;
+        if (!index.Exists()) {
+            return 0;
+        }
         return *index;
     }
 

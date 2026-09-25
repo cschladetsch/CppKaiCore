@@ -9,23 +9,28 @@ namespace detail {
 
 #if (defined(__GNUC__) && defined(__i386__)) || defined(__WATCOMC__) || \
     defined(_MSC_VER) || defined(__BORLANDC__) || defined(__TURBOC__)
-#define get16bits(d) (*((const unsigned short *)(d)))
+#define GET16BITS(d) (*((const unsigned short*) (d)))
 #endif
 
-#if !defined(get16bits)
+#ifndef get16bits
 #define get16bits(d)                                      \
     ((((size_t)(((const unsigned char *)(d))[1])) << 8) + \
      (size_t)(((const unsigned char *)(d))[0]))
 #endif
 
 struct LabelHash {
-    friend bool operator==(const Label &A, const Label &B) { return A == B; }
+    friend bool operator==(const Label& a, const Label& b)
+    {
+        return a == b;
+    }
 
-    inline unsigned long operator()(Label const &label) const {
+    unsigned long operator()(Label const& label) const
+    {
         const std::string &string = label.GetValue().GetStorage();
 
         unsigned long len = string.size();
-        unsigned long hash = len, tmp;
+        unsigned long hash = len;
+        unsigned long tmp;
         if (len <= 0) {
             return 0;
         }
@@ -34,8 +39,8 @@ struct LabelHash {
         len >>= 2;
         // Main loop; 4 bytes each iteration
         for (; len > 0; len--) {
-            hash += get16bits(data);
-            tmp = (get16bits(data + 2) << 11) ^ hash;
+            hash += GET16BITS(data);
+            tmp = (GET16BITS(data + 2) << 11) ^ hash;
             hash = (hash << 16) ^ tmp;
             data += 4;
             hash += hash >> 11;
@@ -43,13 +48,13 @@ struct LabelHash {
         // handle end cases
         switch (rem) {
             case 3:
-                hash += get16bits(data);
+                hash += GET16BITS(data);
                 hash ^= hash << 16;
                 hash ^= data[sizeof(unsigned short)] << 18;
                 hash += hash >> 11;
                 break;
             case 2:
-                hash += get16bits(data);
+                hash += GET16BITS(data);
                 hash ^= hash << 11;
                 hash += hash >> 17;
                 break;

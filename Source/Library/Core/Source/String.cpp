@@ -1,9 +1,9 @@
-#include <KAI/Core/BuiltinTypes.h>
+﻿#include <KAI/Core/BuiltinTypes.h>
 
 KAI_BEGIN
 
 StringStream &operator>>(StringStream &S, String &T) {
-    T.clear();
+    T.Clear();
     char C = 0;
     while (S.Extract(C)) {
         if (!isspace(C)) {

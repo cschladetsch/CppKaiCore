@@ -8,7 +8,7 @@ KAI_BEGIN
 
 class Tree {
    public:
-    typedef std::list<Object> SearchPath;
+       using SearchPathA = std::list<Object>;
 
    private:
     SearchPath path_;
@@ -16,16 +16,28 @@ class Tree {
     Pathname current_;
 
    public:
-    void SetRoot(const Object &Q) { root_ = Q; }
+       void SetRoot(const Object& q)
+       {
+           root_ = q;
+       }
     void AddSearchPath(const Pathname &);
     void AddSearchPath(const Object &);
 
-    Object Resolve(const Pathname &) const;
-    Object Resolve(const Label &) const;
+    [[nodiscard]] Object Resolve(const Pathname&) const;
+    [[nodiscard]] Object Resolve(const Label&) const;
 
-    Object GetRoot() const { return root_; }
-    Object GetScope() const { return scope_; }
-    const SearchPath &GetSearchPath() const { return path_; }
+    [[nodiscard]] Object GetRoot() const
+    {
+        return root_;
+    }
+    [[nodiscard]] Object GetScope() const
+    {
+        return scope_;
+    }
+    [[nodiscard]] const SearchPath& GetSearchPath() const
+    {
+        return path_;
+    }
 
     void SetScope(const Object &);
     void SetScope(const Pathname &);

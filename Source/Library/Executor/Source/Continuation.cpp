@@ -1,4 +1,4 @@
-#define NOMINMAX
+﻿#define NOMINMAX
 
 #include <KAI/Core/BuiltinTypes/Bool.h>
 #include <KAI/Core/BuiltinTypes/Signed32.h>
@@ -22,7 +22,7 @@ void Continuation::Create() {
     index = New(0);
     // Initialize other members and ensure they exist
     entered = New(false);
-    InitialStackDepth = -1;
+    initialStackDepth = -1;
 
     // Make sure code is initialized to prevent null pointer issues
     if (!code.Exists()) {
@@ -132,7 +132,7 @@ StringStream &InsertContinuation(StringStream &stream, const Array &code,
 }
 
 StringStream &operator<<(StringStream &str, const Continuation &cont) {
-    str << "Continuation " << cont.Self->GetHandle() << "[";
+    str << "Continuation " << cont.self->GetHandle() << "[";
     for (const auto &cmd : *cont.GetCode()) str << cmd << " ";
     return str << "] @" << cont.index << "/" << cont.code->Size();
 }
@@ -156,9 +156,9 @@ BinaryStream &operator>>(BinaryStream &stream, Continuation &cont) {
 
 void Continuation::Register(Registry &registry) {
     ClassBuilder<Continuation>(registry, "Continuation")
-        .Methods.Properties("code", &Continuation::code)(
+        .methods.properties("code", &Continuation::code)(
             "args", &Continuation::args)("scope", &Continuation::scope)(
-            "source_code", &Continuation::source_code);
+            "source_code", &Continuation::sourceCode);
 }
 
 KAI_END

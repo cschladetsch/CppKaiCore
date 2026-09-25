@@ -1,4 +1,4 @@
-#include "KAI/Core/Tree.h"
+﻿#include "KAI/Core/Tree.h"
 
 #include <KAI/Core/Exception/Extended.h>
 #include <KAI/Core/Object/GetStorageBase.h>
@@ -19,7 +19,7 @@ Pathname GetFullname(const Object &Q) {
 
 Pathname GetFullname(const StorageBase &obj) {
     std::list<String> parentage;
-    if (auto const &label = obj.GetLabel(); !label.ToString().empty())
+    if (auto const &label = obj.GetLabel(); !label.ToString().Empty())
         parentage.push_back(label.ToString());
 
     for (auto parent = obj.GetParent(); parent.Valid();
@@ -38,7 +38,7 @@ Pathname GetFullname(const StorageBase &obj) {
 void Set(Object scope, const Pathname &path, Object const &Q) {
     if (path.Empty()) return;
 
-    auto A = path.begin(), B = --path.end();
+    auto A = path.Begin(), B = --path.End();
 
     if (B->type != Pathname::Element::Name)
         KAI_THROW_1(InvalidPathname, path.ToString());
@@ -59,8 +59,8 @@ void Set(Object scope, const Pathname &path, Object const &Q) {
                 break;
 
             case Pathname::Element::Name: {
-                const Label &name = A->name_;
-                if (A == --path.end()) {
+                const Label &name = A->name;
+                if (A == --path.End()) {
                     GetStorageBase(scope).Set(name, Q);
                     break;
                 }
@@ -77,7 +77,7 @@ void Set(Object scope, const Pathname &path, Object const &Q) {
         }
     }
 
-    GetStorageBase(scope).Set(A->name_, Q);
+    GetStorageBase(scope).Set(A->name, Q);
 }
 
 void Set(Object const &root, Object const &scope, Object const &ident,
@@ -123,7 +123,7 @@ Object Get(Object scope, const Pathname &path) {
                 break;
 
             case Pathname::Element::Name: {
-                scope = scope.Get(element.name_);
+                scope = scope.Get(element.name);
                 if (!scope.Exists()) return scope;
             } break;
 
@@ -142,7 +142,7 @@ Object Get(Object scope, const Pathname &path) {
 bool Exists(Object const &scope, const Pathname &path) {
     try {
         return Get(scope, path).Exists();
-    } catch (const Exception::ObjectNotFound &e) {
+    } catch (const exception::ObjectNotFound &e) {
         // Object not found is expected and not an error in Exists check
         KAI_TRACE() << "Path not found: " << path.ToString() << " - "
                     << e.ToString();
@@ -158,7 +158,7 @@ bool Exists(Object const &scope, const Pathname &path) {
 bool Exists(Object const &root, Object const &scope, const Pathname &path) {
     try {
         return Get(root, scope, path).Exists();
-    } catch (const Exception::ObjectNotFound &e) {
+    } catch (const exception::ObjectNotFound &e) {
         // Object not found is expected and not an error in Exists check
         KAI_TRACE() << "Path not found: " << path.ToString() << " - "
                     << e.ToString();
@@ -187,7 +187,7 @@ void Remove(Object scope, const Pathname &path) {
                 break;
 
             case Pathname::Element::Name:
-                scope = scope.Get(A->name_);
+                scope = scope.Get(A->name);
                 break;
 
             case Pathname::Element::This:
@@ -199,7 +199,7 @@ void Remove(Object scope, const Pathname &path) {
         }
     }
 
-    scope.Remove(A->name_);
+    scope.Remove(A->name);
 }
 
 void Remove(Object const &root, Object const &scope, const Pathname &path) {

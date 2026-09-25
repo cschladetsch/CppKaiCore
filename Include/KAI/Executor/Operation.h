@@ -180,25 +180,34 @@ struct Operation {
     };
 
    private:
-    Type value;
+       Type value_;
 
    public:
-    Operation(int T = 0) : value(Type(T)) {}
+       Operation(int t = 0) : value_(Type(t)) {}
 
-    void SetType(Type T) { value = T; }
-    Type GetTypeNumber() const { return value; }
+       void SetType(Type t)
+       {
+           value_ = t;
+       }
+       [[nodiscard]] Type GetTypeNumber() const
+       {
+           return value_;
+       }
 
     static const char *ToString(int);
-    const char *ToString() const;
+    [[nodiscard]] const char* ToString() const;
 
-    friend bool operator<(const Operation &A, const Operation &B) {
-        return A.value < B.value;
+    friend bool operator<(const Operation& a, const Operation& b)
+    {
+        return a.value_ < b.value_;
     }
-    friend bool operator==(const Operation &A, const Operation &B) {
-        return A.value == B.value;
+    friend bool operator==(const Operation& a, const Operation& b)
+    {
+        return a.value_ == b.value_;
     }
-    friend bool operator!=(const Operation &A, const Operation &B) {
-        return A.value != B.value;
+    friend bool operator!=(const Operation& a, const Operation& b)
+    {
+        return a.value_ != b.value_;
     }
 
     static void Register(Registry &);

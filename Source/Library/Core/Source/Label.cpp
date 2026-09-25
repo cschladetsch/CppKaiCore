@@ -1,4 +1,4 @@
-#include "KAI/Core/BuiltinTypes/All.h"
+﻿#include "KAI/Core/BuiltinTypes/All.h"
 
 KAI_BEGIN
 
@@ -13,9 +13,9 @@ void Label::FromString2(String text) { FromString(text); }
 void Label::FromString(const Value &S) {
     quoted_ = false;
     value_ = "";
-    if (S.empty()) return;
+    if (S.Empty()) return;
 
-    const String::Char *str = S.c_str();
+    const String::Char *str = S.CStr();
     if (str[0] == '\'') {
         quoted_ = true;
         str++;
@@ -59,7 +59,7 @@ std::ostream &operator<<(std::ostream &S, const Label &L) {
 
 void Label::Register(Registry &R) {
     ClassBuilder<Label>(R, Label("Label"))
-        .Methods("ToString", &Label::ToString, "ToString")(
+        .methods("ToString", &Label::ToString, "ToString")(
             "FromString", &Label::FromString2, "FromString");
 }
 

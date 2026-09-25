@@ -1,4 +1,4 @@
-
+﻿
 #include <algorithm>
 
 #include "KAI/Core/BuiltinTypes.h"
@@ -7,7 +7,7 @@ KAI_BEGIN
 
 void Stack::Register(Registry &R) {
     ClassBuilder<Stack>(R, Label("Stack"))
-        .Methods("Pop", &Stack::Pop)("Top", &Stack::Top)("Size", &Stack::Size)(
+        .methods("Pop", &Stack::Pop)("Top", &Stack::Top)("Size", &Stack::Size)(
             "Empty", &Stack::Empty);
 }
 
@@ -19,45 +19,45 @@ bool Stack::Destroy() {
 Object Stack::At(int N) const {
     if (N < 0) KAI_THROW_1(BadIndex, N);
     if (N >= Size()) KAI_THROW_0(EmptyStack);
-    return stack[Size() - 1 - N];
+    return stack_[Size() - 1 - N];
 }
 
 Object Stack::Top() const {
-    if (stack.empty()) KAI_THROW_0(EmptyStack);
-    return stack.back();
+    if (stack_.empty()) KAI_THROW_0(EmptyStack);
+    return stack_.back();
 }
 
-void Stack::Push(Object const &Q) { stack.push_back(Q); }
+void Stack::Push(Object const &Q) { stack_.push_back(Q); }
 
 void Stack::Clear() {
     while (!Empty()) Pop();
 }
 
 Stack::iterator Stack::Erase(Object const &Q) {
-    iterator A = std::find(begin(), end(), Q);
-    if (A != end()) return Erase(A);
+    iterator A = std::find(Begin(), End(), Q);
+    if (A != End()) return Erase(A);
     KAI_THROW_1(UnknownObject, Q.GetHandle());
 }
 
 Stack::iterator Stack::Erase(iterator A) {
     Detach(*A);
-    return stack.erase(A);
+    return stack_.erase(A);
 }
 
 Object Stack::Pop() {
-    if (stack.empty()) KAI_THROW_0(EmptyStack);
+    if (stack_.empty()) KAI_THROW_0(EmptyStack);
     Object Q = Top();
     Detach(Q);
-    stack.pop_back();
+    stack_.pop_back();
     return Q;
 }
 
-StringStream &operator<<(StringStream &stream, const Stack &stack) {
+StringStream &operator<<(StringStream &stream, const Stack &stack_) {
     stream << "Stack[";
     String sep;
-    for (auto obj : stack) {
+    for (auto obj : stack_) {
         stream << sep << obj;
-        if (sep.empty()) sep = ", ";
+        if (sep.Empty()) sep = ", ";
     }
     return stream << "]";
 }

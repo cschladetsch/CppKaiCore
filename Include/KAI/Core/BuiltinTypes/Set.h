@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/Config/Base.h>
 #include <KAI/Core/Object/Object.h>
@@ -11,42 +11,51 @@
 KAI_BEGIN
 
 struct CompareHandles {
-    bool operator()(Object const &A, Object const &B) const {
-        return A.GetHandle() == B.GetHandle();
+    bool operator()(Object const& a, Object const& b) const
+    {
+        return a.GetHandle() == b.GetHandle();
     }
 };
 
 struct HashObject {
-    inline size_t operator()(Object const &A) const {
-        return A.GetHandle().GetValue();
+    size_t operator()(Object const& a) const
+    {
+        return a.GetHandle().GetValue();
     }
 };
 
 // I'm sure there was a good reason I named this ObjectSet rather than just Set.
 // And at this point, I am too afraid to ask.
 struct ObjectSet : Container<ObjectSet> {
-    typedef std::unordered_set<Object, HashObject, CompareHandles> Objects;
-    typedef Objects::const_iterator const_iterator;
-    typedef Objects::iterator iterator;
+    using Objects = std::unordered_set<Object, HashObject, CompareHandles>;
+    using const_iterator = Objects::const_iterator;
+    using iterator = Objects::iterator;
 
-   private:
-    Objects objects;
+private:
+    Objects objects_;
 
-   public:
-    bool Destroy();
+public:
+    bool Destroy() override;
 
-    const_iterator begin() const { return objects.begin(); }
-    const_iterator end() const { return objects.end(); }
-    iterator begin() { return objects.begin(); }
-    iterator end() { return objects.end(); }
+    [[nodiscard]] const_iterator Begin() const
+    {
+        return objects_.begin();
+    }
+    [[nodiscard]] const_iterator End() const
+    {
+        return objects_.end();
+    }
+    iterator Begin()
+    {
+        return objects_.begin();
+    }
+    iterator End()
+    {
+        return objects_.end();
+    }
 
-    const_iterator Begin() const { return objects.begin(); }
-    const_iterator End() const { return objects.end(); }
-    iterator Begin() { return objects.begin(); }
-    iterator End() { return objects.end(); }
-
-    int Size() const;
-    bool Empty() const;
+    [[nodiscard]] int Size() const;
+    [[nodiscard]] bool Empty() const;
     void Clear();
     iterator Erase(iterator);
     iterator Erase(Object const &);
@@ -55,12 +64,18 @@ struct ObjectSet : Container<ObjectSet> {
     void Remove(Object const &);
     bool Contains(Object const &);
 
-    void SetChildSwitch(int N, bool M) {
-        ForEach(objects, SetSwitch<ObjectSet>(N, M));
+    void SetChildSwitch(int n, bool m)
+    {
+        ForEach(objects_, SetSwitch<ObjectSet>(n, m));
     }
 
     static void Register(Registry &);
 };
+
+inline ObjectSet::iterator begin(ObjectSet &s) { return s.Begin(); }
+inline ObjectSet::iterator end(ObjectSet &s) { return s.End(); }
+inline ObjectSet::const_iterator begin(ObjectSet const &s) { return s.Begin(); }
+inline ObjectSet::const_iterator end(ObjectSet const &s) { return s.End(); }
 
 StringStream &operator<<(StringStream &, ObjectSet const &);
 StringStream &operator>>(StringStream &, ObjectSet &);

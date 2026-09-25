@@ -11,49 +11,57 @@ KAI_BEGIN
 /// Common for all methods_ that return void or not, and are const or not
 class MethodBase : public CallableBase<MethodBase> {
    public:
-    Type::Number class_type;
-    Constness constness;
-    MethodBase(Constness C, const Label &N)
-        : constness(C), CallableBase<MethodBase>(N) {}
+       Type::Number classType;
+       Constness constness;
+       MethodBase(Constness c, const Label& n) : constness(c), CallableBase<MethodBase>(n) {}
 
-    virtual ~MethodBase() {}
+       ~MethodBase() override = default;
 
-    Type::Number GetClassType() const { return class_type; }
-    Constness GetConstness() const { return constness; }
+       [[nodiscard]] Type::Number GetClassType() const
+       {
+           return classType;
+       }
+       [[nodiscard]] Constness GetConstness() const
+       {
+           return constness;
+       }
 
-    void Invoke(Object const &Q, Stack &stack) {
-        if (Q.IsConst())
-            ConstInvoke(Q, stack);
-        else
-            NonConstInvoke(Q, stack);
-    }
+       void Invoke(Object const& q, Stack& stack)
+       {
+           if (q.IsConst()) {
+               ConstInvoke(q, stack);
+           } else {
+               NonConstInvoke(q, stack);
+           }
+       }
 
     virtual void NonConstInvoke(const Object &servant, Stack &stack) = 0;
     virtual void ConstInvoke(const Object &servant, Stack &stack) = 0;
 
-    Object GetArgumentTypesArray() const;
-    String ToString() const;
+    [[nodiscard]] Object GetArgumentTypesArray() const;
+    [[nodiscard]] String ToString() const;
     static void Register(Registry &);
 };
 
 template <class Method>
 struct ConstMethodBase : MethodBase {
-    typedef Method MethodType;
+    using MethodType = Method;
     Method method;
-    ConstMethodBase(Method M, const Label &N)
-        : method(M), MethodBase(Constness::Const, N) {}
+    ConstMethodBase(Method m, const Label& n) : method(m), MethodBase(Constness::Const, n) {}
 
-    void NonConstInvoke(const Object &Q, Stack &S) { ConstInvoke(Q, S); }
-    ConstMethodBase(Method M, const Label &N, Constness C)
-        : method(M), MethodBase(C, N) {}
+    void NonConstInvoke(const Object& q, Stack& s) override
+    {
+        ConstInvoke(q, s);
+    }
+    ConstMethodBase(Method m, const Label& n, Constness c) : method(m), MethodBase(c, n) {}
 };
 
 template <class Method>
 struct MutatingMethodBase : ConstMethodBase<Method> {
-    MutatingMethodBase(Method M, const Label &N)
-        : ConstMethodBase<Method>(M, N, Constness::Mutable) {}
+    MutatingMethodBase(Method m, const Label& n) : ConstMethodBase<Method>(m, n, Constness::Mutable) {}
 
-    void ConstInvoke(const Object &, Stack &) {
+    void ConstInvoke(const Object& /*unused*/, Stack& /*unused*/)
+    {
         KAI_THROW_1(ConstError, "Mutating method");
     }
 };

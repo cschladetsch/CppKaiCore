@@ -1,18 +1,18 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/Config/Base.h>
 #include <KAI/Core/Memory/IAllocator.h>
 
 KAI_BEGIN
 
-namespace Memory {
+namespace memory {
 /// Commonality for all allocators
-struct BaseAllocator : IAllocator {
+struct BaseAllocator : memory::IAllocator {
     typedef char Byte;
     typedef char *BytePtr;
 
-    typename IAllocator::Allocator alloc;
-    typename IAllocator::DeAllocator free;
+    typename memory::IAllocator::Allocator alloc;
+    typename memory::IAllocator::DeAllocator free;
 
    protected:
     BaseAllocator() : alloc(0), free(0) {}
@@ -27,6 +27,6 @@ struct BaseAllocator : IAllocator {
         free(ptr, num_bytes);
     }
 };
-}  // namespace Memory
+}  // namespace memory
 
 KAI_END

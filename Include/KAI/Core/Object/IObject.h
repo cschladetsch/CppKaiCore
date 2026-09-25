@@ -20,25 +20,25 @@ class IObject {
     };
 
     enum Color { White, Grey, Black };
-    virtual const StorageBase &GetStorageBase() const = 0;
+    [[nodiscard]] virtual const StorageBase& GetStorageBase() const = 0;
     virtual StorageBase &GetStorageBase() = 0;
 
-    virtual Type::Number GetTypeNumber() const = 0;
-    virtual const ClassBase *GetClass() const = 0;
+    [[nodiscard]] virtual Type::Number GetTypeNumber() const = 0;
+    [[nodiscard]] virtual const ClassBase* GetClass() const = 0;
 
-    virtual Registry *GetRegistry() const = 0;
+    [[nodiscard]] virtual Registry* GetRegistry() const = 0;
 
-    virtual Handle GetParentHandle() const = 0;
+    [[nodiscard]] virtual Handle GetParentHandle() const = 0;
     virtual void SetParentHandle(Handle) = 0;
-    virtual Handle GetHandle() const = 0;
+    [[nodiscard]] virtual Handle GetHandle() const = 0;
 
-    virtual bool Exists() const = 0;
-    virtual bool Valid() const = 0;
+    [[nodiscard]] virtual bool Exists() const = 0;
+    [[nodiscard]] virtual bool Valid() const = 0;
 
-    virtual bool IsConst() const = 0;
-    virtual bool IsManaged() const = 0;
-    virtual bool IsMarked() const = 0;
-    virtual bool IsClean() const = 0;
+    [[nodiscard]] virtual bool IsConst() const = 0;
+    [[nodiscard]] virtual bool IsManaged() const = 0;
+    [[nodiscard]] virtual bool IsMarked() const = 0;
+    [[nodiscard]] virtual bool IsClean() const = 0;
 
     virtual void SetMarked(bool = true) const = 0;
     virtual void SetSwitch(int, bool) = 0;
@@ -55,15 +55,18 @@ class IObject {
     bool IsUnmarked() const { return !IsMarked(); }
     */
 
-    bool IsDirty() const { return !IsClean(); }
+    [[nodiscard]] bool IsDirty() const
+    {
+        return !IsClean();
+    }
 
     virtual void Set(const Label &, const Object &) = 0;
     virtual Object Get(const Label &) = 0;
     virtual void Remove(const Label &) = 0;
     virtual bool Has(const Label &) = 0;
 
-    virtual String ToString() const = 0;
-    virtual String ToXmlString() const = 0;
+    [[nodiscard]] virtual String ToString() const = 0;
+    [[nodiscard]] virtual String ToXmlString() const = 0;
 };
 
 KAI_END

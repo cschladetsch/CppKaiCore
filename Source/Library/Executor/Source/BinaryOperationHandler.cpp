@@ -126,7 +126,7 @@ Object BinaryOperationHandler::Perform(Object const &A, Object const &B,
                     << "Unsupported operation: " << Operation::ToString(op);
                 return Object();
         }
-    } catch (const Exception::Base &e) {
+    } catch (const exception::Base &e) {
         KAI_TRACE_ERROR() << "BinaryOperationHandler: KAI exception: "
                           << e.ToString();
         return Object();
@@ -207,7 +207,7 @@ Object BinaryOperationHandler::PerformArithmetic(Object const &A,
                         if (result) {
                             return Object(ObjectConstructParams(result));
                         }
-                    } catch (const Exception::Base &e) {
+                    } catch (const exception::Base &e) {
                         KAI_TRACE_ERROR()
                             << "Plus operation failed: " << e.ToString();
                     }
@@ -252,7 +252,7 @@ Object BinaryOperationHandler::PerformArithmetic(Object const &A,
                         if (result) {
                             return Object(ObjectConstructParams(result));
                         }
-                    } catch (const Exception::Base &e) {
+                    } catch (const exception::Base &e) {
                         KAI_TRACE_ERROR()
                             << "Minus operation failed: " << e.ToString();
                     }
@@ -306,7 +306,7 @@ Object BinaryOperationHandler::PerformArithmetic(Object const &A,
                         if (result) {
                             return Object(ObjectConstructParams(result));
                         }
-                    } catch (const Exception::Base &e) {
+                    } catch (const exception::Base &e) {
                         KAI_TRACE_ERROR()
                             << "Multiply operation failed: " << e.ToString();
                     }
@@ -365,7 +365,7 @@ Object BinaryOperationHandler::PerformArithmetic(Object const &A,
                         if (result) {
                             return Object(ObjectConstructParams(result));
                         }
-                    } catch (const Exception::Base &e) {
+                    } catch (const exception::Base &e) {
                         KAI_TRACE_ERROR()
                             << "Divide operation failed: " << e.ToString();
                     }
@@ -495,7 +495,7 @@ Object BinaryOperationHandler::PerformComparison(Object const &A,
                         bool result = classPtr->Less(A.GetStorageBase(),
                                                      B.GetStorageBase());
                         return CreateNew(registry, result);
-                    } catch (const Exception::Base &e) {
+                    } catch (const exception::Base &e) {
                         KAI_TRACE_ERROR()
                             << "Less operation failed: " << e.ToString();
                         return CreateNew(registry, false);
@@ -544,7 +544,7 @@ Object BinaryOperationHandler::PerformComparison(Object const &A,
                         bool result = classPtr->Greater(A.GetStorageBase(),
                                                         B.GetStorageBase());
                         return CreateNew(registry, result);
-                    } catch (const Exception::Base &e) {
+                    } catch (const exception::Base &e) {
                         KAI_TRACE_ERROR()
                             << "Greater operation failed: " << e.ToString();
                         return CreateNew(registry, false);

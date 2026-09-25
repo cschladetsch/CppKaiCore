@@ -1,13 +1,13 @@
-#include "KAI/Core/BuiltinTypes.h"
+﻿#include "KAI/Core/BuiltinTypes.h"
 
 KAI_BEGIN
 
 void List::Append(Object const &Q) {
-    if (Attach(Q)) objects.push_back(Q);
+    if (Attach(Q)) objects_.push_back(Q);
 }
 
 List::iterator List::Erase(Object const &Q) {
-    List::iterator iter = begin(), last = end();
+    List::iterator iter = Begin(), last = End();
     for (; iter != last; ++iter) {
         if (iter->GetHandle() == Q.GetHandle()) {
             return Erase(iter);
@@ -18,20 +18,20 @@ List::iterator List::Erase(Object const &Q) {
 
 List::iterator List::Erase(iterator A) {
     if (A->Exists()) Detach(*A);
-    return objects.erase(A);
+    return objects_.erase(A);
 }
 
 Object List::Pop() {
-    if (objects.empty()) {
+    if (objects_.empty()) {
         KAI_THROW_0(EmptyStack);
     }
-    Object Q = objects.back();
-    Erase(--objects.end());
+    Object Q = objects_.back();
+    Erase(--objects_.end());
     return Q;
 }
 
 void List::Clear() {
-    iterator A = begin(), B = end();
+    iterator A = Begin(), B = End();
     while (A != B) A = Erase(A);
 }
 
@@ -58,14 +58,14 @@ StringStream &operator<<(StringStream &stream, List const &list) {
     String sep = "";
     for (auto object : list) {
         stream << sep << object;
-        if (sep.empty()) sep = ", ";
+        if (sep.Empty()) sep = ", ";
     }
     return stream << "]";
 }
 
 void List::Register(Registry &R) {
     ClassBuilder<List>(R, Label(Type::Traits<List>::Name()))
-        .Methods("PopBack", &List::PopBack,
+        .methods("PopBack", &List::PopBack,
                  "Remove last object from the sequence")(
             "PushBack", &List::Append2, "Add an Object to the end")(
             "Erase", &List::Erase2, "Remove an object from the sequence")(

@@ -1,11 +1,11 @@
-#pragma once
+﻿#pragma once
 
 #include "KAI/KAI.h"
 #include "StandardAllocator.h"
 
 KAI_BEGIN
 
-namespace Memory {
+namespace memory {
 /// Memory subsystem. Supports different allocators
 template <class Allocator = StandardAllocator>
 struct System {
@@ -30,6 +30,6 @@ struct System {
         allocator.DeAllocateBytes(ptr, N);
     }
 };
-}  // namespace Memory
+}  // namespace memory
 
 KAI_END

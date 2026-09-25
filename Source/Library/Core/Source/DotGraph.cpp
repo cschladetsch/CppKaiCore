@@ -1,4 +1,4 @@
-#include <KAI/Core/DotGraph.h>
+﻿#include <KAI/Core/DotGraph.h>
 
 #include <fstream>
 
@@ -20,7 +20,7 @@ void DotGraph::Generate(Object root, String const &filename) {
     WriteHeader();
     *this << root;
     WriteFooter();
-    WriteToFile(filename.c_str());
+    WriteToFile(filename.CStr());
 }
 
 void DotGraph::WriteHeader() { *this << "digraph G\n{\n"; }
@@ -42,7 +42,7 @@ DotGraph &operator<<(DotGraph &graph, Object const &object) {
     label << object.GetLabel().ToString() << "[" << object.GetClass()->GetName()
           << "]";
 
-    graph << object_id << " [shape=box label=\"" << label.ToString().c_str()
+    graph << object_id << " [shape=box label=\"" << label.ToString().StdString()
           << "\"";
     graph << " color=";
     switch (object.GetColor()) {
@@ -101,7 +101,7 @@ bool DotGraph::IsExcluded(Object const &object) const {
 
 void DotGraph::WriteToFile(const char *filename) {
     String text = GetText();
-    std::fstream(filename, std::ios::out).write(text.c_str(), text.size());
+    std::fstream(filename, std::ios::out).write(text.CStr(), text.Size());
 }
 
 KAI_END

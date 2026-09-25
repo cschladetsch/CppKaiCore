@@ -2,6 +2,8 @@
 
 #include <KAI/Core/Config/Base.h>
 #include <KAI/Core/Type/Number.h>
+
+#include <utility>
 #include "KAI/Core/BasePointer.h"
 #include "KAI/Core/Object/Label.h"
 #include "KAI/Core/BasePointerBase.h"
@@ -12,25 +14,42 @@ KAI_BEGIN
 template <class Callable>
 struct CallableBase : BasePointerBase
 {
-	typedef std::vector<Type::Number> ArgumentTypes;
+    using ArgumentTypes = std::vector<Type::Number>;
 
 protected:
-	Type::Number return_type;
-	ArgumentTypes arguments;
-	Label name;
+    Type::Number returnType_;
+    ArgumentTypes arguments_;
+    Label name_;
 
 public:
-	CallableBase() { }
-	CallableBase(const Label &N) : name(N) { }
+private:
+    CallableBase() = default;
 
-	Type::Number GetReturnType() const { return return_type; }
-	Label GetName() const { return name; }
-	const ArgumentTypes &GetArgumentTypes() const { return arguments; }
-	Type::Number GetArgumentType(int N) const { return arguments[N]; }
-	String Description;
+public:
+private:
+    CallableBase(Label n) : name_(std::move(n)) {}
 
-	Object GetArgumentTypesArray() const;
-	/*
+public:
+    [[nodiscard]] Type::Number GetReturnType() const
+    {
+        return returnType_;
+    }
+    [[nodiscard]] Label GetName() const
+    {
+        return name_;
+    }
+    [[nodiscard]] const ArgumentTypes& GetArgumentTypes() const
+    {
+        return arguments_;
+    }
+    [[nodiscard]] Type::Number GetArgumentType(int n) const
+    {
+        return arguments_[n];
+    }
+    String description;
+
+    [[nodiscard]] Object GetArgumentTypesArray() const;
+    /*
 	{
 		Pointer<Array> args = New<Array>();
 		ArgumentTypes::const_iterator A = arguments.begin(), B = arguments.end();
@@ -39,6 +58,8 @@ public:
 		return args;
 	}
 	*/
+    friend Callable;
+    friend Callable;
 };
 
 namespace Type

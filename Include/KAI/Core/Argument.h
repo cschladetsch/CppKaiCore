@@ -6,22 +6,22 @@ KAI_BEGIN
 
 template <class T>
 struct Argument {
-    typedef const T &Type;
+    using Type = T&;
 };
 
 template <class T>
 struct Argument<const T> {
-    typedef const T &Type;
+    using Type = T&;
 };
 
 template <class T>
 struct Argument<T &> {
-    typedef T &Type;
+    using Type = T&;
 };
 
 template <class T>
 struct Argument<const T &> {
-    typedef const T &Type;
+    using Type = T&;
 };
 
 KAI_END

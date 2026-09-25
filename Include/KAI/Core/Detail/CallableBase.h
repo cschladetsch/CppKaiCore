@@ -16,19 +16,21 @@ namespace detail {
 using namespace meta;
 
 template <typename F, typename Tuple, size_t... I>
-decltype(auto) CallFunImpl(F f, Tuple &&t, std::index_sequence<I...>) {
+decltype(auto) CallFunImpl(F f, Tuple&& t, std::index_sequence<I...> /*unused*/)
+{
     return std::forward<F>(f)(get<I>(std::forward<Tuple>(t))...);
 }
 
 // invoke a function with any arity given arguments in a tuple
 template <typename F, typename Tuple>
 decltype(auto) CallFun(F f, Tuple &&t) {
-    using idx = std::make_index_sequence<std::tuple_size<std::decay_t<Tuple>>::value>;
+    using idx = std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>;
     return CallFunImpl(std::forward<F>(f), std::forward<Tuple>(t), idx{});
 }
 
 template <class Q, typename F, typename Tuple, size_t... I>
-decltype(auto) CallMethodImpl(Q &q, F f, Tuple &&t, std::index_sequence<I...>) {
+decltype(auto) CallMethodImpl(Q& q, F f, Tuple&& t, std::index_sequence<I...> /*unused*/)
+{
     auto m = std::forward<F>(f);
     return (q.*m)(get<I>(std::forward<Tuple>(t))...);
 }
@@ -36,18 +38,24 @@ decltype(auto) CallMethodImpl(Q &q, F f, Tuple &&t, std::index_sequence<I...>) {
 // invoke a method of any arity given arguments in a tuple
 template <class Q, typename F, typename Tuple>
 decltype(auto) CallMethod(Q &q, F f, Tuple &&t) {
-    using idx = std::make_index_sequence<std::tuple_size<std::decay_t<Tuple>>::value>;
+    using idx = std::make_index_sequence<std::tuple_size_v<std::decay_t<Tuple>>>;
     return CallMethodImpl(q, std::forward<F>(f), std::forward<Tuple>(t), idx{});
 }
 
 template <class T>
 struct MakeAssignment {
-    static void Perform(T &A, const Object &B) { A = Deref<T>(B); }
+    static void Perform(T& a, const Object& b)
+    {
+        a = Deref<T>(b);
+    }
 };
 
 template <class T>
 struct MakeAssignment<Pointer<T>> {
-    static void Perform(Pointer<T> &A, const Object &B) { A = B; }
+    static void Perform(Pointer<T>& a, const Object& b)
+    {
+        a = b;
+    }
 };
 
 template <class T>
@@ -58,7 +66,7 @@ template <int N>
 struct Add {
     template <class... Args>
     static void Arg(Stack &input, tuple<Args...> &args) {
-        typedef typename RootType<decltype(std::get<N>(args))>::Type Ty;
+        using Ty = typename RootType<decltype(std::get<N>(args))>::Type;
         Object back = input.Top();
         input.Pop();
         MakeAssignment<Ty>::Perform(get<N>(args), back);
@@ -71,7 +79,7 @@ template <>
 struct Add<0> {
     template <class... Args>
     static void Arg(Stack &input, tuple<Args...> &args) {
-        typedef typename RootType<decltype(std::get<0>(args))>::Type Ty;
+        using Ty = typename RootType<decltype(std::get<0>(args))>::Type;
         Object back = input.Top();
         input.Pop();
         MakeAssignment<Ty>::Perform(get<0>(args), back);

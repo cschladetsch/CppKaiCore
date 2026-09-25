@@ -63,8 +63,8 @@ struct TranslatorCommon : ProcessCommon {
     struct Unsupported : Exception {};
 
    protected:
-    std::vector<Pointer<Continuation> > stack;
-    using ProcessCommon::reg_;
+       std::vector<Pointer<Continuation>> stack_;
+       using ProcessCommon::reg_;
 };
 
 KAI_END

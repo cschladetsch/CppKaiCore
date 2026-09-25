@@ -9,22 +9,22 @@ KAI_BEGIN
 template <class T>
 struct TypeInfo {
     enum { IsSytem = false };  // is this a system type?
-    typedef T StorageType;     // the type stored in the parent structure
-    typedef T ValueType;       // the underlying value type
+    using StorageType = T;     // the type stored in the parent structure
+    using ValueType = T;       // the underlying value type
 };
 
 template <>
 struct TypeInfo<Object> {
-    enum { IsSytem = true };
-    typedef Object StorageType;
-    typedef Object ValueType;
+    enum { IsSytem = static_cast<int>(true) };
+    using StorageType = Object;
+    using ValueType = Object;
 };
 
 template <class T>
 struct TypeInfo<Pointer<T> > {
     enum { IsSytem = true };
-    typedef Pointer<T> StorageType;
-    typedef T ValueType;
+    using StorageType = Pointer<T>;
+    using ValueType = T;
 };
 
 KAI_END

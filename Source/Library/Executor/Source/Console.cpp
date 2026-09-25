@@ -1,4 +1,4 @@
-#include "KAI/Console/Console.h"
+﻿#include "KAI/Console/Console.h"
 
 #include "KAI/Language/Pi/PiTranslator.h"
 #include "KAI/Language/Rho/RhoTranslator.h"
@@ -56,8 +56,8 @@ class MultiLangTranslator : public TranslatorCommon {
             case Language::Pi: {
                 pi_->trace = compiler_->GetTraceLevel();
                 auto result = pi_->Translate(text, st);
-                if (pi_->Failed) {
-                    KAI_TRACE_ERROR() << pi_->Error;
+                if (pi_->failed) {
+                    KAI_TRACE_ERROR() << pi_->error;
                     return Object();
                 }
                 return result;
@@ -65,8 +65,8 @@ class MultiLangTranslator : public TranslatorCommon {
             case Language::Rho: {
                 rho_->trace = compiler_->GetTraceLevel();
                 auto result = rho_->Translate(text, st);
-                if (rho_->Failed) {
-                    KAI_TRACE_ERROR() << rho_->Error;
+                if (rho_->failed) {
+                    KAI_TRACE_ERROR() << rho_->error;
                     return Object();
                 }
                 return result;
@@ -78,7 +78,7 @@ class MultiLangTranslator : public TranslatorCommon {
 };
 
 Console::Console() {
-    alloc = make_shared<Memory::StandardAllocator>();
+    alloc_ = make_shared<memory::StandardAllocator>();
     peer_.reset();
     networkingEnabled_ = false;
     networkRunning_ = false;
@@ -88,8 +88,8 @@ Console::Console() {
     LoadHistory();
 }
 
-Console::Console(shared_ptr<Memory::IAllocator> alloc) {
-    this->alloc = alloc;
+Console::Console(shared_ptr<memory::IAllocator> alloc) {
+    this->alloc_ = alloc;
     peer_.reset();
     networkingEnabled_ = false;
     networkRunning_ = false;
@@ -102,12 +102,12 @@ Console::Console(shared_ptr<Memory::IAllocator> alloc) {
 Console::~Console() {
     StopNetworking();
     SaveHistory();
-    alloc->DeAllocate(reg_);
+    alloc_->DeAllocate(reg_);
 }
 
 void Console::Create() {
     try {
-        auto result = alloc->Allocate<Registry>(alloc);
+        auto result = alloc_->Allocate<Registry>(alloc_);
         if (!result.has_value()) {
             KAI_TRACE_ERROR() << "Could not allocate Registry";
             return;
@@ -116,21 +116,21 @@ void Console::Create() {
 
         RegisterTypes();
 
-        executor = reg_->New<Executor>();
-        compiler = reg_->New<Compiler>();
+        executor_ = reg_->New<Executor>();
+        compiler_ = reg_->New<Compiler>();
 
-        executor.SetManaged(false);
-        compiler.SetManaged(false);
+        executor_.SetManaged(false);
+        compiler_.SetManaged(false);
 
         // Set the compiler reference in the executor
-        executor->SetCompiler(compiler);
+        executor_->SetCompiler(compiler_);
 
         CreateTree();
 
         // Set default language to Pi
         SetLanguage(Language::Pi);
     }
-    KAI_CATCH(exception, e) {
+    KAI_CATCH(std::exception, e) {
         KAI_TRACE_1(e.what());
         std::cerr << "Console::Create::Exception '" << e.what() << "'" << ends;
     }
@@ -145,18 +145,18 @@ void Console::ExposeTypesToTree(Object types) {
 }
 
 void Console::SetLanguage(Language lang) {
-    language = lang;
+    language_ = lang;
 
-    if (compiler.Exists()) {
-        compiler->SetLanguage(static_cast<int>(lang));
+    if (compiler_.Exists()) {
+        compiler_->SetLanguage(static_cast<int>(lang));
     }
 
-    if (!translator) {
+    if (!translator_) {
         SetTranslator(std::make_shared<MultiLangTranslator>(
             *reg_,
             std::make_shared<PiTranslator>(*reg_),
             std::make_shared<RhoTranslator>(*reg_),
-            compiler));
+            compiler_));
     }
 }
 
@@ -165,18 +165,18 @@ void Console::SetLanguage(int lang) {
 }
 
 void Console::SetTranslator(std::shared_ptr<TranslatorCommon> trans) {
-    translator = trans;
+    translator_ = trans;
 
     // Set up the compiler's translation function to use our translator
-    if (compiler.Exists() && translator) {
-        compiler->SetTranslateFunction(
+    if (compiler_.Exists() && translator_) {
+        compiler_->SetTranslateFunction(
             [this](const String &text, Structure st) -> Pointer<Continuation> {
-                return translator->Translate(text.c_str(), st);
+                return translator_->Translate(text.CStr(), st);
             });
     }
 }
 
-void Console::ControlC() { executor->ClearContext(); }
+void Console::ControlC() { executor_->ClearContext(); }
 
 void Console::ClearScreen() const {
     // Use ANSI escape sequences to clear screen and move cursor to top
@@ -341,7 +341,7 @@ void Console::ExecuteShellCommandWithColor(const std::string &command) {
     }
 }
 
-Language Console::GetLanguage() const { return language; }
+Language Console::GetLanguage() const { return language_; }
 
 void Console::CreateTree() {
     Object root = reg_->New<void>();
@@ -357,14 +357,14 @@ void Console::CreateTree() {
 
     home.SetManaged(false);
 
-    tree.SetRoot(root);
+    tree_.SetRoot(root);
     root.Set("Types", types);
     root.Set("Sys", sys);
     root.Set("Bin", bin);
     root.Set("Home", home);
 
-    Set(root, Pathname("/Compiler"), compiler);
-    Set(root, Pathname("/Executor"), executor);
+    Set(root, Pathname("/Compiler"), compiler_);
+    Set(root, Pathname("/Executor"), executor_);
 
     Bin::AddFunctions(bin);
     std::function<void(Object, Object)> sendBinaryFn =
@@ -408,21 +408,21 @@ void Console::CreateTree() {
     };
     AddFunction(bin, sendBinaryFn, Label("send"),
                 "Send a BinaryStream to a peer");
-    tree.AddSearchPath(Pathname("/Bin"));
-    tree.AddSearchPath(Pathname("/Sys"));
-    tree.AddSearchPath(Pathname("/Types"));
+    tree_.AddSearchPath(Pathname("/Bin"));
+    tree_.AddSearchPath(Pathname("/Sys"));
+    tree_.AddSearchPath(Pathname("/Types"));
 
-    executor->SetTree(&tree);
-    reg_->SetTree(tree);
+    executor_->SetTree(&tree_);
+    reg_->SetTree(tree_);
 
     root.Set("Home", home);
-    tree.SetScope(Pathname("/Home"));
+    tree_.SetScope(Pathname("/Home"));
 
     ExposeTypesToTree(types);
 }
 
 void Console::Execute(Pointer<Continuation> cont) {
-    ExecuteWithExecutor(cont, executor);
+    ExecuteWithExecutor(cont, executor_);
 }
 
 void Console::ExecuteWithExecutor(Pointer<Continuation> cont,
@@ -505,7 +505,7 @@ void Console::ExecuteWithExecutor(Pointer<Continuation> cont,
         // The continuation might have finished, which is normal
         // Don't access continuation properties after execution completes
     }
-    KAI_CATCH(Exception::Base, E) {
+    KAI_CATCH(exception::Base, E) {
         KAI_TRACE_ERROR_1(E);
         // For debugging: log stack state when exception occurs
         KAI_TRACE() << "Exception occurred. Stack state:";
@@ -514,7 +514,7 @@ void Console::ExecuteWithExecutor(Pointer<Continuation> cont,
         }
         throw;
     }
-    KAI_CATCH(exception, E) {
+    KAI_CATCH(std::exception, E) {
         KAI_TRACE_ERROR_2("StdException: ", E.what());
         throw;
     }
@@ -525,7 +525,7 @@ void Console::ExecuteWithExecutor(Pointer<Continuation> cont,
 }
 
 void Console::Execute(String const &text, Structure st) {
-    ExecuteWithExecutor(text, executor, st);
+    ExecuteWithExecutor(text, executor_, st);
 }
 
 void Console::ExecuteWithExecutor(const String &text,
@@ -534,10 +534,10 @@ void Console::ExecuteWithExecutor(const String &text,
     // Use the translator if available, otherwise use compiler
     Pointer<Continuation> cont;
 
-    if (translator) {
-        cont = translator->Translate(text.c_str(), st);
-    } else if (compiler.Exists()) {
-        cont = compiler->Translate(text.c_str(), st);
+    if (translator_) {
+        cont = translator_->Translate(text.CStr(), st);
+    } else if (compiler_.Exists()) {
+        cont = compiler_->Translate(text.CStr(), st);
     } else {
         KAI_TRACE_ERROR() << "No translator or compiler available";
         return;
@@ -553,7 +553,7 @@ void Console::ExecuteWithExecutor(const String &text,
     // Removed noisy trace for cleaner Console output
 
     // Set the scope on the continuation (important for Store operations)
-    cont->SetScope(tree.GetScope());
+    cont->SetScope(tree_.GetScope());
 
     // Execute the continuation - let exceptions propagate to Process
     ExecuteWithExecutor(cont, targetExecutor);
@@ -889,7 +889,7 @@ String Console::ParseHistoryExpansion(const String &text) {
 
     // Get the command from history using the event part
     String historicalCommand = ProcessZshCommand(String(eventPart));
-    if (historicalCommand.size() == 0) {
+    if (historicalCommand.Size() == 0) {
         return String("");
     }
 
@@ -935,8 +935,8 @@ String Console::ProcessQuickSubstitution(const String &text) {
             }
 
             // Apply to last command
-            if (!commandHistory.empty()) {
-                std::string lastCmd = commandHistory.back();
+            if (!commandHistory_.empty()) {
+                std::string lastCmd = commandHistory_.back();
                 size_t pos = lastCmd.find(oldStr);
                 if (pos != std::string::npos) {
                     lastCmd.replace(pos, oldStr.length(), newStr);
@@ -953,7 +953,7 @@ String Console::SearchHistoryAnywhere(const String &pattern) {
     std::string searchStr = pattern.StdString();
 
     // Search backwards through history for pattern anywhere in command
-    for (auto it = commandHistory.rbegin(); it != commandHistory.rend(); ++it) {
+    for (auto it = commandHistory_.rbegin(); it != commandHistory_.rend(); ++it) {
         if (it->find(searchStr) != std::string::npos) {
             return String(*it);
         }
@@ -971,8 +971,8 @@ String Console::ProcessZshCommand(const String &text) {
 
     // Handle !$ - last argument of previous command
     if (cmd == "!$") {
-        if (!commandHistory.empty()) {
-            auto words = SplitIntoWords(commandHistory.back());
+        if (!commandHistory_.empty()) {
+            auto words = SplitIntoWords(commandHistory_.back());
             if (!words.empty()) {
                 return String(words.back());
             }
@@ -982,8 +982,8 @@ String Console::ProcessZshCommand(const String &text) {
 
     // Handle !^ - first argument of previous command
     if (cmd == "!^") {
-        if (!commandHistory.empty()) {
-            auto words = SplitIntoWords(commandHistory.back());
+        if (!commandHistory_.empty()) {
+            auto words = SplitIntoWords(commandHistory_.back());
             if (words.size() > 1) {
                 return String(words[1]);
             }
@@ -1012,10 +1012,10 @@ String Console::ProcessZshCommand(const String &text) {
 
     // Handle !! - repeat last command
     if (cmd == "!!" || cmd.substr(0, 2) == "!!") {
-        if (commandHistory.empty()) {
+        if (commandHistory_.empty()) {
             return String("");
         }
-        return String(commandHistory.back());
+        return String(commandHistory_.back());
     }
 
     // Handle !n - execute nth command from history
@@ -1025,8 +1025,8 @@ String Console::ProcessZshCommand(const String &text) {
             endPos++;
         }
         size_t n = std::stoul(cmd.substr(1, endPos - 1));
-        if (n > 0 && n <= commandHistory.size()) {
-            return String(commandHistory[n - 1]);
+        if (n > 0 && n <= commandHistory_.size()) {
+            return String(commandHistory_[n - 1]);
         }
         return String("");
     }
@@ -1038,8 +1038,8 @@ String Console::ProcessZshCommand(const String &text) {
             endPos++;
         }
         size_t n = std::stoul(cmd.substr(2, endPos - 2));
-        if (n > 0 && n <= commandHistory.size()) {
-            return String(commandHistory[commandHistory.size() - n]);
+        if (n > 0 && n <= commandHistory_.size()) {
+            return String(commandHistory_[commandHistory_.size() - n]);
         }
         return String("");
     }
@@ -1048,7 +1048,7 @@ String Console::ProcessZshCommand(const String &text) {
     if (cmd.size() > 1) {
         std::string searchStr = cmd.substr(1);
         // Search backwards through history
-        for (auto it = commandHistory.rbegin(); it != commandHistory.rend();
+        for (auto it = commandHistory_.rbegin(); it != commandHistory_.rend();
              ++it) {
             if (it->substr(0, searchStr.size()) == searchStr) {
                 return String(*it);
@@ -1070,7 +1070,7 @@ String Console::ExpandHistoryReferences(const String &text) {
         std::string histRef = currentMatch[0].str();
         String expanded = ProcessZshCommand(String(histRef));
 
-        if (expanded.size() > 0) {
+        if (expanded.Size() > 0) {
             result = currentMatch.prefix().str() + expanded.StdString() +
                      currentMatch.suffix().str();
         } else {
@@ -1085,7 +1085,7 @@ String Console::ExpandHistoryReferences(const String &text) {
         std::string histRef = shortcutMatch[0].str();
         String expanded = ProcessZshCommand(String(histRef));
 
-        if (expanded.size() > 0) {
+        if (expanded.Size() > 0) {
             result = shortcutMatch.prefix().str() + expanded.StdString() +
                      shortcutMatch.suffix().str();
         } else {
@@ -1100,7 +1100,7 @@ String Console::ExpandHistoryReferences(const String &text) {
         std::string searchStr = searchMatch[1].str();
         String expanded = SearchHistoryAnywhere(String(searchStr));
 
-        if (expanded.size() > 0) {
+        if (expanded.Size() > 0) {
             result = searchMatch.prefix().str() + expanded.StdString() +
                      searchMatch.suffix().str();
         } else {
@@ -1118,7 +1118,7 @@ String Console::ExpandHistoryReferences(const String &text) {
         std::string histRef = match[0].str();
         String expanded = ProcessZshCommand(String(histRef));
 
-        if (expanded.size() > 0) {
+        if (expanded.Size() > 0) {
             result = match.prefix().str() + expanded.StdString() +
                      match.suffix().str();
         } else {
@@ -1188,7 +1188,7 @@ String Console::Process(const String &text) {
 
         // For Rho, check if this looks like a statement (contains control
         // structures)
-        if (language == Language::Rho) {
+        if (language_ == Language::Rho) {
             std::string str = expandedText.StdString();
             if (str.find("for") != std::string::npos ||
                 str.find("while") != std::string::npos ||
@@ -1200,15 +1200,15 @@ String Console::Process(const String &text) {
 
         // Translate the text into a continuation
         Pointer<Continuation> cont;
-        if (translator) {
-            cont = translator->Translate(expandedText.c_str(), structure);
-        } else if (compiler.Exists()) {
-            cont = compiler->Translate(expandedText.c_str(), structure);
+        if (translator_) {
+            cont = translator_->Translate(expandedText.CStr(), structure);
+        } else if (compiler_.Exists()) {
+            cont = compiler_->Translate(expandedText.CStr(), structure);
         }
 
         if (cont.Exists()) {
             // Set the scope
-            cont->SetScope(tree.GetScope());
+            cont->SetScope(tree_.GetScope());
 
             // Execute the continuation using our improved Execute method
             Execute(cont);
@@ -1216,10 +1216,10 @@ String Console::Process(const String &text) {
 
         return "";
     }
-    KAI_CATCH(Exception::Base, E) {
+    KAI_CATCH(exception::Base, E) {
         result << "Exception: " << E.ToString() << "\n";
     }
-    KAI_CATCH(exception, E) { result << "StdException: " << E.what() << "\n"; }
+    KAI_CATCH(std::exception, E) { result << "StdException: " << E.what() << "\n"; }
     KAI_CATCH_ALL() { result << "UnknownException: " << "\n"; }
     return result.ToString();
 }
@@ -1234,7 +1234,7 @@ void Console::WritePrompt(ostream &out) const {
     } else {
         // Normal Pi/Rho prompt
         out << rang::style::bold << rang::fg::cyan
-            << ToString(static_cast<Language>(compiler->GetLanguage()))
+            << ToString(static_cast<Language>(compiler_->GetLanguage()))
             << rang::fg::yellow << " λ " << rang::fg::reset
             << rang::style::bold;
     }
@@ -1244,16 +1244,16 @@ void Console::WritePrompt(ostream &out) const {
 String Console::GetPrompt() const {
     StringStream prompt;
     prompt << ConsoleColor::LanguageName
-           << ToString(static_cast<Language>(compiler->GetLanguage()))
+           << ToString(static_cast<Language>(compiler_->GetLanguage()))
            << ConsoleColor::Pathname
-           << GetFullname(GetTree().GetScope()).ToString().c_str()
+           << GetFullname(GetTree().GetScope()).ToString().StdString()
            << ConsoleColor::Input << "> ";
 
     return prompt.ToString();
 }
 
 void Console::ShowColoredStack() const {
-    const Value<const Stack> data = executor->GetDataStack();
+    const Value<const Stack> data = executor_->GetDataStack();
     if (!data.Exists() || data->Size() == 0) {
         return;  // Don't show anything for empty stack
     }
@@ -1272,14 +1272,14 @@ void Console::ShowColoredStack() const {
         String objStr = A->ToString();
 
         if (is_string) {
-            cout << rang::fg::green << "\"" << objStr.c_str() << "\""
+            cout << rang::fg::green << "\"" << objStr.CStr() << "\""
                  << rang::fg::reset;
         } else if (is_int) {
-            cout << rang::fg::yellow << objStr.c_str() << rang::fg::reset;
+            cout << rang::fg::yellow << objStr.CStr() << rang::fg::reset;
         } else if (is_float) {
-            cout << rang::fg::magenta << objStr.c_str() << rang::fg::reset;
+            cout << rang::fg::magenta << objStr.CStr() << rang::fg::reset;
         } else {
-            cout << rang::fg::gray << objStr.c_str() << rang::fg::reset;
+            cout << rang::fg::gray << objStr.CStr() << rang::fg::reset;
         }
 
         cout << endl;
@@ -1287,7 +1287,7 @@ void Console::ShowColoredStack() const {
 }
 
 String Console::WriteStack() const {
-    return WriteStackForExecutor(executor);
+    return WriteStackForExecutor(executor_);
 }
 
 String Console::WriteStackForExecutor(Pointer<Executor> exec) const {
@@ -1363,7 +1363,7 @@ int Console::Run() {
                 while (IsStructureIncomplete(accumulatedInput)) {
                     // Show continuation prompt
                     cout << rang::style::bold;
-                    cout << ToString(language) << " ... ";
+                    cout << ToString(language_) << " ... ";
 
                     string continuationLine;
                     try {
@@ -1402,7 +1402,7 @@ int Console::Run() {
                 } else if (!text.empty() && text[0] == '^') {
                     // Handle quick substitution ^old^new^
                     String substituted = ProcessQuickSubstitution(String(text));
-                    if (substituted.size() > 0) {
+                    if (substituted.Size() > 0) {
                         cout << rang::fg::cyan << "=> "
                              << substituted.StdString() << rang::fg::reset
                              << endl;
@@ -1410,7 +1410,7 @@ int Console::Run() {
                         // Process the substituted command
                         String expandedText = ExpandShellCommands(substituted);
                         String output = Process(expandedText);
-                        cout << output.c_str();
+                        cout << output.CStr();
 
                         // Add the substituted command to history
                         AddToHistory(substituted.StdString());
@@ -1434,7 +1434,7 @@ int Console::Run() {
                                  << "Entering shell mode. Type 'exit' to "
                                     "return to "
                                  << ToString(static_cast<Language>(
-                                        compiler->GetLanguage()))
+                                        compiler_->GetLanguage()))
                                  << " mode." << rang::fg::reset << endl;
                         }
                         continue;
@@ -1447,7 +1447,7 @@ int Console::Run() {
                             cout << rang::fg::yellow
                                  << "Exited shell mode. Back to "
                                  << ToString(static_cast<Language>(
-                                        compiler->GetLanguage()))
+                                        compiler_->GetLanguage()))
                                  << " mode." << rang::fg::reset << endl;
                             continue;
                         }
@@ -1459,7 +1459,7 @@ int Console::Run() {
                         if (text[0] == '^') {
                             String substituted =
                                 ProcessQuickSubstitution(String(text));
-                            if (substituted.size() > 0) {
+                            if (substituted.Size() > 0) {
                                 expandedCmd = substituted.StdString();
                                 cout << rang::fg::cyan << "=> " << expandedCmd
                                      << rang::fg::reset << endl;
@@ -1506,7 +1506,7 @@ int Console::Run() {
                     if (!text.empty() && text[0] == '/') {
                         String result = ProcessNetworkCommand(String(text));
                         if (!result.Empty()) {
-                            cout << result.c_str() << endl;
+                            cout << result.CStr() << endl;
                         }
                         continue;
                     }
@@ -1518,7 +1518,7 @@ int Console::Run() {
                     // it
                     if (text[0] == '!' && text.find(' ') == std::string::npos) {
                         String expanded = ProcessZshCommand(String(text));
-                        if (expanded.size() > 0) {
+                        if (expanded.Size() > 0) {
                             processedText = expanded.StdString();
                             // Show what command is being executed
                             cout << rang::fg::cyan << "=> " << processedText
@@ -1542,32 +1542,32 @@ int Console::Run() {
                     if (!processedText.empty() && processedText[0] == '`') {
                         String output =
                             ProcessShellCommand(String(processedText));
-                        cout << output.c_str();
+                        cout << output.CStr();
                     } else {
                         // Expand any embedded shell commands first
                         String expandedText =
                             ExpandShellCommands(String(processedText));
                         String output = Process(expandedText);
-                        cout << output.c_str();
+                        cout << output.CStr();
                     }
                 }
 
                 // Always show the stack after processing (unless it's empty)
-                if (executor.Exists() && executor->GetDataStack().Exists()) {
+                if (executor_.Exists() && executor_->GetDataStack().Exists()) {
                     ShowColoredStack();
                 }
 
                 if (end_) return endCode_;
             }
         }
-        KAI_CATCH(Exception::Base, E) {
+        KAI_CATCH(exception::Base, E) {
             // Use rang for formatting, keeping bold
             cout << rang::style::bold << rang::fg::red;
             KAI_TRACE_ERROR_1(E);
             // Reset color but maintain bold
             cout << rang::style::bold << rang::fg::reset;
         }
-        KAI_CATCH(exception, E) {
+        KAI_CATCH(std::exception, E) {
             cout << rang::style::bold << rang::fg::red;
             KAI_TRACE_ERROR_1(E.what());
             cout << rang::style::bold << rang::fg::reset;
@@ -1626,10 +1626,10 @@ void Console::RegisterTypes() {
 }
 
 Pointer<Continuation> Console::Compile(const char *text, Structure st) {
-    if (translator) {
-        return translator->Translate(text, st);
-    } else if (compiler.Exists()) {
-        return compiler->Translate(text, st);
+    if (translator_) {
+        return translator_->Translate(text, st);
+    } else if (compiler_.Exists()) {
+        return compiler_->Translate(text, st);
     }
     return Object();
 }
@@ -1638,7 +1638,7 @@ void Console::Register(Registry &) {}
 
 bool Console::IsStructureIncomplete(const String &text) const {
     // For Rho language, check if we have unmatched braces
-    if (language == Language::Rho) {
+    if (language_ == Language::Rho) {
         int braceCount = 0;
         bool inString = false;
         char stringChar = '\0';
@@ -1675,7 +1675,7 @@ bool Console::ExecuteFile(const char *fileName) {
         return false;
     }
 
-    if (!compiler.Exists()) {
+    if (!compiler_.Exists()) {
         KAI_TRACE_ERROR() << "ExecuteFile: Null compiler";
         return false;
     }
@@ -1706,7 +1706,7 @@ bool Console::ExecuteFile(const char *fileName) {
             if (!accumulated.empty()) {
                 String result = Process(String(accumulated));
                 if (!result.Empty()) {
-                    std::cout << result.c_str();
+                    std::cout << result.CStr();
                 }
                 accumulated.clear();
             }
@@ -1714,7 +1714,7 @@ bool Console::ExecuteFile(const char *fileName) {
             // Execute the shell command
             String result = Process(String(line));
             if (!result.Empty()) {
-                std::cout << result.c_str();
+                std::cout << result.CStr();
             }
         } else {
             // Accumulate language code
@@ -1726,7 +1726,7 @@ bool Console::ExecuteFile(const char *fileName) {
     if (!accumulated.empty()) {
         String result = Process(String(accumulated));
         if (!result.Empty()) {
-            std::cout << result.c_str();
+            std::cout << result.CStr();
         }
     }
 
@@ -1781,9 +1781,9 @@ bool Console::ProcessBuiltinCommand(const std::string &command) {
     if (cmd == "history") {
         cout << rang::style::bold << "Command History:" << rang::style::reset
              << "\n";
-        for (size_t i = 0; i < commandHistory.size(); ++i) {
+        for (size_t i = 0; i < commandHistory_.size(); ++i) {
             cout << rang::fg::cyan << "  " << (i + 1) << ": " << rang::fg::reset
-                 << commandHistory[i] << "\n";
+                 << commandHistory_[i] << "\n";
         }
         return true;
     }
@@ -1986,42 +1986,42 @@ void Console::LoadHistory() {
     // Set history file path
     const char *home = std::getenv("HOME");
     if (home) {
-        historyFile = std::string(home) + "/.kai_history";
+        historyFile_ = std::string(home) + "/.kai_history";
     } else {
-        historyFile = ".kai_history";
+        historyFile_ = ".kai_history";
     }
 
-    std::ifstream file(historyFile);
+    std::ifstream file(historyFile_);
     if (!file.is_open()) {
         return;  // File doesn't exist yet, that's fine
     }
 
     std::string line;
-    while (std::getline(file, line) && commandHistory.size() < maxHistorySize) {
+    while (std::getline(file, line) && commandHistory_.size() < kMaxHistorySize) {
         if (!line.empty()) {
-            commandHistory.push_back(line);
+            commandHistory_.push_back(line);
         }
     }
     file.close();
 }
 
 void Console::SaveHistory() const {
-    if (historyFile.empty()) {
+    if (historyFile_.empty()) {
         return;
     }
 
-    std::ofstream file(historyFile);
+    std::ofstream file(historyFile_);
     if (!file.is_open()) {
         return;  // Can't save, but don't error
     }
 
     // Save only the last maxHistorySize entries
-    size_t start = commandHistory.size() > maxHistorySize
-                       ? commandHistory.size() - maxHistorySize
+    size_t start = commandHistory_.size() > kMaxHistorySize
+                       ? commandHistory_.size() - kMaxHistorySize
                        : 0;
 
-    for (size_t i = start; i < commandHistory.size(); ++i) {
-        file << commandHistory[i] << "\n";
+    for (size_t i = start; i < commandHistory_.size(); ++i) {
+        file << commandHistory_[i] << "\n";
     }
     file.close();
 }
@@ -2029,17 +2029,17 @@ void Console::SaveHistory() const {
 void Console::AddToHistory(const std::string &command) {
     // Don't add empty commands or duplicates of the last command
     if (command.empty() ||
-        (!commandHistory.empty() && commandHistory.back() == command)) {
+        (!commandHistory_.empty() && commandHistory_.back() == command)) {
         return;
     }
 
-    commandHistory.push_back(command);
+    commandHistory_.push_back(command);
 
     // Keep history size under control
-    if (commandHistory.size() > maxHistorySize) {
-        commandHistory.erase(
-            commandHistory.begin(),
-            commandHistory.begin() + (commandHistory.size() - maxHistorySize));
+    if (commandHistory_.size() > kMaxHistorySize) {
+        commandHistory_.erase(
+            commandHistory_.begin(),
+            commandHistory_.begin() + (commandHistory_.size() - kMaxHistorySize));
     }
 }
 
@@ -2136,7 +2136,7 @@ bool Console::SendCommandToPeer(const std::string& peerAddr, const std::string& 
     }
     
     BinaryStream bs;
-    bs.Write(static_cast<unsigned char>(NetworkMessageType::CONSOLE_COMMAND));
+    bs.Write(static_cast<unsigned char>(NetworkMessageType::ConsoleCommand));
     net::NetworkSerializer::WriteString(bs, consoleId_);
     net::NetworkSerializer::WriteString(bs, command);
     bs.Write(static_cast<int>(GetLanguage()));
@@ -2163,7 +2163,7 @@ bool Console::SendBinaryToPeer(const std::string& peerAddr,
     }
 
     BinaryStream bs;
-    bs.Write(static_cast<unsigned char>(NetworkMessageType::CONSOLE_BINARY));
+    bs.Write(static_cast<unsigned char>(NetworkMessageType::ConsoleBinary));
     net::NetworkSerializer::WriteString(bs, consoleId_);
     int size = payload.Size();
     bs.Write(size);
@@ -2192,7 +2192,7 @@ void Console::BroadcastCommand(const std::string& command) {
     }
     
     BinaryStream bs;
-    bs.Write(static_cast<unsigned char>(NetworkMessageType::CONSOLE_BROADCAST));
+    bs.Write(static_cast<unsigned char>(NetworkMessageType::ConsoleBroadcast));
     net::NetworkSerializer::WriteString(bs, consoleId_);
     net::NetworkSerializer::WriteString(bs, command);
     bs.Write(static_cast<int>(GetLanguage()));
@@ -2234,7 +2234,7 @@ void Console::SetNetworkMessageCallback(std::function<void(const NetworkConsoleM
 }
 
 String Console::ProcessNetworkCommand(const String& command) {
-    string cmd = command.c_str();
+    string cmd = command.CStr();
     stringstream ss(cmd);
     string verb;
     ss >> verb;
@@ -2380,19 +2380,19 @@ void Console::HandleNetworkPacket(const net::NetPacket& packet) {
     NetworkMessageType msgType = static_cast<NetworkMessageType>(packet.data[0]);
     
     switch (msgType) {
-        case NetworkMessageType::CONSOLE_COMMAND:
+        case NetworkMessageType::ConsoleCommand:
             HandleConsoleCommand(packet);
             break;
-        case NetworkMessageType::CONSOLE_RESULT:
+        case NetworkMessageType::ConsoleResult:
             HandleConsoleResult(packet);
             break;
-        case NetworkMessageType::CONSOLE_BROADCAST:
+        case NetworkMessageType::ConsoleBroadcast:
             HandleConsoleBroadcast(packet);
             break;
-        case NetworkMessageType::CONSOLE_LANGUAGE_SWITCH:
+        case NetworkMessageType::ConsoleLanguageSwitch:
             HandleLanguageSwitch(packet);
             break;
-        case NetworkMessageType::CONSOLE_BINARY:
+        case NetworkMessageType::ConsoleBinary:
             HandleConsoleBinary(packet);
             break;
         default:
@@ -2445,7 +2445,7 @@ void Console::HandleConsoleCommand(const net::NetPacket& packet) {
     Language originalLang = GetLanguage();
     Language remoteLang = static_cast<Language>(languageInt);
 
-    Value<Stack> mainStackBefore = executor->GetDataStack();
+    Value<Stack> mainStackBefore = executor_->GetDataStack();
     int initialSize = (mainStackBefore.Exists()) ? mainStackBefore->Size() : 0;
     bool shareMainStack = (initialSize > 0) || (remoteLang != originalLang);
 
@@ -2459,7 +2459,7 @@ void Console::HandleConsoleCommand(const net::NetPacket& packet) {
 
 
         ExecuteWithExecutor(String(command.c_str()), peerExecutor);
-        string resultDump = WriteStackForExecutor(peerExecutor).c_str();
+        string resultDump = WriteStackForExecutor(peerExecutor).CStr();
         if (shareMainStack) {
             CopyExecutorStackToMain(peerExecutor);
         }
@@ -2476,7 +2476,7 @@ void Console::HandleConsoleCommand(const net::NetPacket& packet) {
         msg.timestamp = chrono::system_clock::now().time_since_epoch().count();
         LogNetworkMessage(msg);
 
-    } catch (const Exception::Base& e) {
+    } catch (const exception::Base& e) {
         string error = "Error: " + string(e.ToString().c_str());
         SendResultToPeer(packet.address, command, error);
 
@@ -2537,7 +2537,7 @@ void Console::HandleConsoleBroadcast(const net::NetPacket& packet) {
     Language originalLang = GetLanguage();
     Language remoteLang = static_cast<Language>(languageInt);
 
-    Value<Stack> mainStackBefore = executor->GetDataStack();
+    Value<Stack> mainStackBefore = executor_->GetDataStack();
     int initialSize = (mainStackBefore.Exists()) ? mainStackBefore->Size() : 0;
     bool shareMainStack = (initialSize > 0) || (remoteLang != originalLang);
 
@@ -2549,7 +2549,7 @@ void Console::HandleConsoleBroadcast(const net::NetPacket& packet) {
 
 
         ExecuteWithExecutor(String(command.c_str()), peerExecutor);
-        string resultDump = WriteStackForExecutor(peerExecutor).c_str();
+        string resultDump = WriteStackForExecutor(peerExecutor).CStr();
         if (shareMainStack) {
             CopyExecutorStackToMain(peerExecutor);
         }
@@ -2565,7 +2565,7 @@ void Console::HandleConsoleBroadcast(const net::NetPacket& packet) {
         msg.timestamp = chrono::system_clock::now().time_since_epoch().count();
         LogNetworkMessage(msg);
         
-    } catch (const Exception::Base& e) {
+    } catch (const exception::Base& e) {
         cout << rang::fg::red << "   Error: " << e.ToString().c_str() 
              << rang::fg::reset << endl;
         
@@ -2630,7 +2630,7 @@ void Console::HandleConsoleBinary(const net::NetPacket& packet) {
         stream->Write(size, buffer.data());
     }
 
-    executor->Push(stream.GetObject());
+    executor_->Push(stream.GetObject());
 
     cout << rang::fg::magenta << "<- [" << senderId << "] "
          << "<binary " << size << " bytes pushed to stack>"
@@ -2650,7 +2650,7 @@ void Console::SendResultToPeer(const net::NetAddress& peer,
     if (!peer_) return;
     
     BinaryStream bs;
-    bs.Write(static_cast<unsigned char>(NetworkMessageType::CONSOLE_RESULT));
+    bs.Write(static_cast<unsigned char>(NetworkMessageType::ConsoleResult));
     net::NetworkSerializer::WriteString(bs, consoleId_);
     net::NetworkSerializer::WriteString(bs, command);
     net::NetworkSerializer::WriteString(bs, result);
@@ -2702,7 +2702,7 @@ void Console::CopyMainStackToExecutor(Pointer<Executor> target) const {
     }
 
     targetStack->Clear();
-    Value<const Stack> mainStack = executor->GetDataStack();
+    Value<const Stack> mainStack = executor_->GetDataStack();
     if (!mainStack.Exists()) {
         return;
     }
@@ -2723,7 +2723,7 @@ void Console::CopyExecutorStackToMain(Pointer<Executor> source) {
     }
 
     Value<Stack> sourceStack = source->GetDataStack();
-    Value<Stack> mainStack = executor->GetDataStack();
+    Value<Stack> mainStack = executor_->GetDataStack();
 
     if (!mainStack.Exists()) {
         return;
@@ -2740,7 +2740,7 @@ void Console::CopyExecutorStackToMain(Pointer<Executor> source) {
     }
 
     for (const auto& obj : items) {
-        executor->Push(obj);
+        executor_->Push(obj);
     }
 }
 
@@ -2829,8 +2829,8 @@ Pointer<Executor> Console::GetOrCreatePeerExecutor(const std::string& peerKey) {
 
     Pointer<Executor> newExecutor = reg_->New<Executor>();
     newExecutor.SetManaged(false);
-    newExecutor->SetCompiler(compiler);
-    newExecutor->SetTree(&tree);
+    newExecutor->SetCompiler(compiler_);
+    newExecutor->SetTree(&tree_);
 
     peerExecutors_[peerKey] = newExecutor;
     return newExecutor;

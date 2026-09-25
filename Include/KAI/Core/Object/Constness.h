@@ -8,14 +8,16 @@ KAI_BEGIN
 struct Constness {
     enum Type { None, Const, Mutable };
     Type value;
-    Constness(Type T = None) : value(T) {}
+    Constness(Type t = None) : value(t) {}
 
-    const char *ToString() const;
-    friend bool operator==(Constness A, Constness B) {
-        return A.value == B.value;
+    [[nodiscard]] const char* ToString() const;
+    friend bool operator==(Constness a, Constness b)
+    {
+        return a.value == b.value;
     }
-    friend bool operator<(Constness A, Constness B) {
-        return A.value < B.value;
+    friend bool operator<(Constness a, Constness b)
+    {
+        return a.value < b.value;
     }
 };
 

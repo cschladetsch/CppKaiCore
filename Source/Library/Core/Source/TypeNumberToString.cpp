@@ -68,7 +68,7 @@ std::string Number::ToString() const {
 
     KAI_NAMESPACE(StringStream) S;
     S << "TypeNumber=" << (int)value << Ends;
-    return S.ToString().c_str();
+    return S.ToString().StdString();
 }
 }  // namespace Type
 

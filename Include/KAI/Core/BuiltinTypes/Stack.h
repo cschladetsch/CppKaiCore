@@ -1,4 +1,4 @@
-
+﻿
 #pragma once
 
 #include <KAI/Core/BuiltinTypes/Container.h>
@@ -13,48 +13,71 @@ KAI_BEGIN
 
 class Stack : public Container<Stack> {
    public:
-    typedef std::vector<Object> Objects;
-    typedef Objects::const_reverse_iterator const_reverse_iterator;
-    typedef Objects::reverse_iterator reverse_iterator;
-    typedef Objects::const_iterator const_iterator;
-    typedef Objects::iterator iterator;
+       using Objects = std::vector<Object>;
+       using const_reverse_iterator = Objects::const_reverse_iterator;
+       using reverse_iterator = Objects::reverse_iterator;
+       using const_iterator = Objects::const_iterator;
+       using iterator = Objects::iterator;
 
    private:
-    Objects stack;
+       Objects stack_;
 
    public:
-    friend bool operator==(const Stack &A, const Stack &B) {
-        return A.stack == B.stack;
+       friend bool operator==(const Stack& a, const Stack& b)
+       {
+           return a.stack_ == b.stack_;
+       }
+       friend bool operator<(const Stack& a, const Stack& b)
+       {
+           return a.stack_ < b.stack_;
+       }
+
+       bool Destroy() override;
+
+       iterator Begin()
+       {
+           return stack_.begin();
+       }
+    iterator End() {
+        return stack_.end();
     }
-    friend bool operator<(const Stack &A, const Stack &B) {
-        return A.stack < B.stack;
+    [[nodiscard]] const_iterator Begin() const
+    {
+        return stack_.begin();
+    }
+    [[nodiscard]] const_iterator End() const
+    {
+        return stack_.end();
+    }
+    [[nodiscard]] bool Empty() const
+    {
+        return stack_.empty();
+    }
+    [[nodiscard]] int Size() const
+    {
+        return static_cast<int>(stack_.size());
     }
 
-    bool Destroy();
-
-    iterator Begin() { return stack.begin(); }
-    iterator End() { return stack.end(); }
-    const_iterator Begin() const { return stack.begin(); }
-    const_iterator End() const { return stack.end(); }
-    bool Empty() const { return stack.empty(); }
-    int Size() const { return (int)stack.size(); }
-
-    Object At(int N) const;
-    void Push(Object const &Q);
+    [[nodiscard]] Object At(int n) const;
+    void Push(Object const& q);
     void Clear();
     iterator Erase(Object const &);
     iterator Erase(iterator);
     Object Pop();
-    Object Top() const;
+    [[nodiscard]] Object Top() const;
 
     static void Register(Registry &);
 
-    const Objects &GetStack() const { return stack; }
-    iterator begin() { return stack.begin(); }
-    iterator end() { return stack.end(); }
-    const_iterator begin() const { return stack.begin(); }
-    const_iterator end() const { return stack.end(); }
+    [[nodiscard]] const Objects& GetStack() const
+    {
+        return stack_;
+    }
 };
+
+inline Stack::iterator begin(Stack &s) { return s.Begin(); }
+inline Stack::iterator end(Stack &s) { return s.End(); }
+inline Stack::const_iterator begin(Stack const &s) { return s.Begin(); }
+inline Stack::const_iterator end(Stack const &s) { return s.End(); }
 
 StringStream &operator<<(StringStream &, const Stack &);
 BinaryStream &operator<<(BinaryStream &, const Stack &);

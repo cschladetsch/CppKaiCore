@@ -16,28 +16,27 @@ struct NoTraitsDefined;
 
 template <typename T>
 struct Traits {
-    typedef typename NoTraitsDefined<T>::ForType Type;
+    using Type = typename NoTraitsDefined<T>::ForType;
 };
 
-typedef int TypeNumber;
+using TypeNumber = int;
 
 template <class T>
 struct StorageType {
-    typedef T Type;
+    using Type = T;
 };
 
-template <class T, int E, int Q, class St = typename StorageType<T>::Type,
-          class Ref = T &, class ConstRef = T const &>
+template <class T, int E, int Q, class St = StorageType<T>::Type, class Ref = T&, class ConstRef = T const&>
 struct TraitsBase {
-    enum { Number = (E) };
-    enum { Props = (Q) };
+    enum { Number = E };
+    enum { Props = Q };
 
-    typedef T Type;
-    typedef St Store;
-    typedef Store *Pointer;
-    typedef Store const *ConstPointer;
-    typedef Ref Reference;
-    typedef ConstRef ConstReference;
+    using Type = T;
+    using Store = St;
+    using Pointer = Store*;
+    using ConstPointer = Store const*;
+    using Reference = Ref;
+    using ConstReference = ConstRef;
 
     static std::string Name() {
         return boost::typeindex::type_id<T>().pretty_name();
@@ -80,19 +79,24 @@ struct TraitsBase {
     // Assignment
     template <class, bool>
     struct AssignOp {
-        static void Perform(Reference, ConstReference) {
+        static void Perform(Reference /*unused*/, ConstReference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Assign);
         }
     };
     template <class Dummy>
     struct AssignOp<Dummy, true> {
-        static void Perform(Reference A, ConstReference B) { A = B; }
+        static void Perform(Reference a, ConstReference b)
+        {
+            a = b;
+        }
     };
 
     // absolute
     template <class Dummy, bool>
     struct AbsoluteOp {
-        static void Perform(Reference) {
+        static void Perform(Reference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Absolute);
         }
     };
@@ -106,118 +110,137 @@ struct TraitsBase {
 
     template <class Dummy, bool>
     struct LessOp {
-        static bool Perform(ConstReference, ConstReference) {
+        static bool Perform(ConstReference /*unused*/, ConstReference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Less);
         }
     };
 
     template <class Dummy>
     struct LessOp<Dummy, true> {
-        static bool Perform(ConstReference A, ConstReference B) {
-            return A < B;
+        static bool Perform(ConstReference a, ConstReference b)
+        {
+            return a < b;
         }
     };
 
     template <class Dummy, bool>
     struct EquivOp {
-        static bool Perform(ConstReference A, ConstReference B) {
-            return A == B;
+        static bool Perform(ConstReference a, ConstReference b)
+        {
+            return a == b;
         }
     };
 
     template <class Dummy>
     struct EquivOp<Dummy, false> {
-        static bool Perform(ConstReference, ConstReference) {
+        static bool Perform(ConstReference /*unused*/, ConstReference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Equiv);
         }
     };
     /// Greater
     template <class Dummy, bool>
     struct GreaterOp {
-        static bool Perform(ConstReference, ConstReference) {
+        static bool Perform(ConstReference /*unused*/, ConstReference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Greater);
         }
     };
 
     template <class Dummy>
     struct GreaterOp<Dummy, true> {
-        static bool Perform(ConstReference A, ConstReference B) {
-            return A > B;
+        static bool Perform(ConstReference a, ConstReference b)
+        {
+            return a > b;
         }
     };
 
     // TODO: implement arithmetic using += etc
     template <class Dummy, bool>
     struct PlusOp {
-        static Store Perform(ConstReference, ConstReference) {
+        static Store Perform(ConstReference /*unused*/, ConstReference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Plus);
         }
     };
 
     template <class Dummy>
     struct PlusOp<Dummy, true> {
-        static Store Perform(ConstReference A, ConstReference B) {
-            return A + B;
+        static Store Perform(ConstReference a, ConstReference b)
+        {
+            return a + b;
         }
     };
 
     template <class Dummy, bool>
     struct BoolOp {
-        static bool Perform(ConstReference) {
+        static bool Perform(ConstReference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Boolean);
         }
     };
 
     template <class Dummy>
     struct BoolOp<Dummy, true> {
-        static bool Perform(ConstReference A) { return static_cast<bool>(A); }
+        static bool Perform(ConstReference a)
+        {
+            return static_cast<bool>(a);
+        }
     };
 
     template <class, bool>
     struct MinusOp {
-        static Store Perform(ConstReference A, ConstReference B) {
-            return A - B;
+        static Store Perform(ConstReference a, ConstReference b)
+        {
+            return a - b;
         }
     };
 
     template <class D>
     struct MinusOp<D, false> {
-        static Store Perform(ConstReference, ConstReference) {
+        static Store Perform(ConstReference /*unused*/, ConstReference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Minus);
         }
     };
 
     template <class D, bool>
     struct MultiplyOp {
-        static Store Perform(ConstReference, ConstReference) {
+        static Store Perform(ConstReference /*unused*/, ConstReference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Multiply);
         }
     };
 
     template <class D>
     struct MultiplyOp<D, true> {
-        static Store Perform(ConstReference A, ConstReference B) {
-            return A * B;
+        static Store Perform(ConstReference a, ConstReference b)
+        {
+            return a * b;
         }
     };
 
     template <class, bool>
     struct DivideOp {
-        static Store Perform(ConstReference, ConstReference) {
+        static Store Perform(ConstReference /*unused*/, ConstReference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::Divide);
         }
     };
 
     template <class D>
     struct DivideOp<D, true> {
-        static Store Perform(ConstReference A, ConstReference B) {
-            return A / B;
+        static Store Perform(ConstReference a, ConstReference b)
+        {
+            return a / b;
         }
     };
 
     template <class, bool>
     struct HashOp {
-        static HashValue Calc(ConstReference A) {
+        static HashValue Calc(ConstReference a)
+        {
 #pragma warning(push)
             // warning: unreachable code. NFI why...
 #pragma warning(disable : 4702)
@@ -229,31 +252,39 @@ struct TraitsBase {
 
     template <class D>
     struct HashOp<D, false> {
-        static HashValue Calc(ConstReference) {
+        static HashValue Calc(ConstReference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::CalcHashValue);
         }
     };
 
     struct UnReflectedLifetimeManagement {
-        static void Create(Storage<T> *) {}
-        static bool Destroy(Storage<T> *) { return true; }
+        static void Create(Storage<T>* /*unused*/) {}
+        static bool Destroy(Storage<T>* /*unused*/)
+        {
+            return true;
+        }
         static void Delete(Storage<T> *ptr) {
-            if (ptr) ptr->GetRegistry()->GetMemorySystem().DeAllocate(ptr);
+            if (ptr) {
+                ptr->GetRegistry()->GetMemorySystem().DeAllocate(ptr);
+            }
         }
     };
 
     struct ReflectedLifetimeManagement {
         static void Create(Storage<T> *storage) {
             UnReflectedLifetimeManagement::Create(storage);
-            Reflected *reflected = (Reflected *)&storage->GetCleanReference();
-            reflected->Self = (StorageBase *)storage;
+            auto* reflected = (Reflected*) &storage->GetCleanReference();
+            reflected->self = (StorageBase*) storage;
             reflected->Create();
         }
 
         static bool Destroy(Storage<T> *storage) {
             Reflected *reflected = &storage->GetReference();
             bool destroyed = reflected->Destroy();
-            if (destroyed) UnReflectedLifetimeManagement::Destroy(storage);
+            if (destroyed) {
+                UnReflectedLifetimeManagement::Destroy(storage);
+            }
 
             return destroyed;
         }
@@ -267,101 +298,89 @@ struct TraitsBase {
 
     template <class, bool>
     struct Contained {
-        template <class A, class B, class C>
-        static void SetSwitch(A, B, C) {}
+        template <class A, class B, class C> static void SetSwitch(A /*unused*/, B /*unused*/, C /*unused*/) {}
 
-        template <class A, class B>
-        static void SetMarked(A, B) {}
+        template <class A, class B> static void SetMarked(A /*unused*/, B /*unused*/) {}
 
-        template <class A, class B>
-        static void Erase(A, B) {}
+        template <class A, class B> static void Erase(A /*unused*/, B /*unused*/) {}
 
-        template <class A, class B>
-        static void ForEachContained(A, B) {
+        template <class A, class B> static void ForEachContained(A /*unused*/, B /*unused*/)
+        {
             // KAI_NOT_IMPLEMENTED();
         }
     };
 
     template <class D>
     struct Contained<D, true> {
-        template <class A, class B, class C>
-        static void SetSwitch(A, B, C) {}
+        template <class A, class B, class C> static void SetSwitch(A /*unused*/, B /*unused*/, C /*unused*/) {}
 
-        template <class A, class B>
-        static void SetMarked(A, B) {}
+        template <class A, class B> static void SetMarked(A /*unused*/, B /*unused*/) {}
 
-        template <class A, class B>
-        static void Erase(A, B) {}
-        template <class A, class B>
-        static void ForEachContained(A, B) {
+        template <class A, class B> static void Erase(A /*unused*/, B /*unused*/) {}
+        template <class A, class B> static void ForEachContained(A /*unused*/, B /*unused*/)
+        {
             // KAI_NOT_IMPLEMENTED();
         }
     };
 
-    typedef Contained<D, HasProperty<::kai::Type::Properties::Container>::Value>
-        ContainerOps;
-    typedef
-        typename meta::If<HasProperty<::kai::Type::Properties::Reflected>::Value != 0,
-                          ReflectedLifetimeManagement,
-                          UnReflectedLifetimeManagement>::Type LifetimeManager;
-    typedef AssignOp<D, HasProperty<::kai::Type::Properties::Assign>::Value != 0> Assign;
-    typedef AbsoluteOp<D, HasProperty<::kai::Type::Properties::Absolute>::Value != 0>
-        Absolute;
-    typedef LessOp<D, HasProperty<::kai::Type::Properties::Less>::Value != 0> Less;
-    typedef EquivOp<D, HasProperty<::kai::Type::Properties::Equiv>::Value != 0> Equiv;
-    typedef GreaterOp<D, HasProperty<::kai::Type::Properties::Greater>::Value != 0> Greater;
-    typedef PlusOp<D, HasProperty<::kai::Type::Properties::Plus>::Value != 0> Plus;
-    typedef MinusOp<D, HasProperty<::kai::Type::Properties::Minus>::Value != 0> Minus;
-    typedef DivideOp<D, HasProperty<::kai::Type::Properties::Divide>::Value != 0> Divide;
-    typedef MultiplyOp<D, HasProperty<::kai::Type::Properties::Multiply>::Value != 0>
-        Multiply;
-    typedef BoolOp<D, HasProperty<::kai::Type::Properties::Boolean>::Value != 0> Boolean;
+    using ContainerOps = Contained<D, HasProperty<::kai::Type::Properties::Container>::Value>;
+    using LifetimeManager = typename meta::If<HasProperty<::kai::Type::Properties::Reflected>::Value != 0,
+                                              ReflectedLifetimeManagement, UnReflectedLifetimeManagement>::Type;
+    using Assign = AssignOp<D, HasProperty<::kai::Type::Properties::Assign>::Value != 0>;
+    using Absolute = AbsoluteOp<D, HasProperty<::kai::Type::Properties::Absolute>::Value != 0>;
+    using Less = LessOp<D, HasProperty<::kai::Type::Properties::Less>::Value != 0>;
+    using Equiv = EquivOp<D, HasProperty<::kai::Type::Properties::Equiv>::Value != 0>;
+    using Greater = GreaterOp<D, HasProperty<::kai::Type::Properties::Greater>::Value != 0>;
+    using Plus = PlusOp<D, HasProperty<::kai::Type::Properties::Plus>::Value != 0>;
+    using Minus = MinusOp<D, HasProperty<::kai::Type::Properties::Minus>::Value != 0>;
+    using Divide = DivideOp<D, HasProperty<::kai::Type::Properties::Divide>::Value != 0>;
+    using Multiply = MultiplyOp<D, HasProperty<::kai::Type::Properties::Multiply>::Value != 0>;
+    using Boolean = BoolOp<D, HasProperty<::kai::Type::Properties::Boolean>::Value != 0>;
     template <bool, class Stream>
     struct StreamInsertOp {
-        static void Insert(Stream &S, ConstReference X) { S << X; }
+        static void Insert(Stream& s, ConstReference x)
+        {
+            s << x;
+        }
     };
 
     template <class Stream>
     struct StreamInsertOp<false, Stream> {
-        static void Insert(Stream &, ConstReference) {
+        static void Insert(Stream& /*unused*/, ConstReference /*unused*/)
+        {
             // nKAI_THROW_1("Can't insert into stream");
         }
     };
 
     template <bool, class Stream>
     struct StreamExtractOp {
-        static void Extract(Stream &S, Reference X) { S >> X; }
+        static void Extract(Stream& s, Reference x)
+        {
+            s >> x;
+        }
     };
     template <class Stream>
     struct StreamExtractOp<false, Stream> {
-        static void Extract(Stream &, ConstReference) {
+        static void Extract(Stream& /*unused*/, ConstReference /*unused*/)
+        {
             KAI_THROW_2(NoOperation, Number, ::kai::Type::Properties::StreamExtract);
         }
     };
 
-    typedef StreamInsertOp<HasProperty<::kai::Type::Properties::StringStreamInsert>::Value !=
-                               0,
-                           KAI_NAMESPACE(StringStream)>
-        StringStreamInsert;
-    typedef StreamExtractOp<
-        HasProperty<::kai::Type::Properties::StringStreamExtract>::Value != 0,
-        KAI_NAMESPACE(StringStream)>
-        StringStreamExtract;
-    typedef StreamInsertOp<HasProperty<::kai::Type::Properties::BinaryStreamInsert>::Value !=
-                               0,
-                           KAI_NAMESPACE(BinaryStream)>
-        BinaryStreamInsert;
-    typedef StreamExtractOp<
-        HasProperty<::kai::Type::Properties::BinaryStreamExtract>::Value != 0,
-        KAI_NAMESPACE(BinaryStream)>
-        BinaryPacketExtract;
+    using StringStreamInsert = StreamInsertOp<HasProperty<::kai::Type::Properties::StringStreamInsert>::Value != 0,
+                                              KAI_NAMESPACE(StringStream)>;
+    using StringStreamExtract = StreamExtractOp<HasProperty<::kai::Type::Properties::StringStreamExtract>::Value != 0,
+                                                KAI_NAMESPACE(StringStream)>;
+    using BinaryStreamInsert = StreamInsertOp<HasProperty<::kai::Type::Properties::BinaryStreamInsert>::Value != 0,
+                                              KAI_NAMESPACE(BinaryStream)>;
+    using BinaryPacketExtract = StreamExtractOp<HasProperty<::kai::Type::Properties::BinaryStreamExtract>::Value != 0,
+                                                KAI_NAMESPACE(BinaryStream)>;
 
     // typedef typename
     // StreamInsert<HasProperty<::kai::Type::Properties::XmlStreamInsert>::Value, XmlStream>
     // XmlStreamInsert;
 
-    typedef HashOp<D, HasProperty<::kai::Type::Properties::NoHashValue>::Value != 0>
-        HashFunction;
+    using HashFunction = HashOp<D, HasProperty<::kai::Type::Properties::NoHashValue>::Value != 0>;
 };
 
 KAI_TYPE_END

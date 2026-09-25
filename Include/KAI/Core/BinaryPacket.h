@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/Config/Base.h>
 
@@ -11,41 +11,72 @@ KAI_BEGIN
 /// without copying.
 class BinaryPacket {
    public:
-    typedef char Byte;
-    typedef const Byte *const_iterator;
+       using Byte = char;
+       using const_iterator = const Byte *;
 
    protected:
-    const_iterator first, current, last;
-    Registry *registry;
+       const_iterator first_, current_, last_;
+       Registry* registry_;
 
    public:
-    BinaryPacket() : registry(0) { first = last = current = 0; }
-    BinaryPacket(Registry &R) : registry(&R) { first = last = current = 0; }
-    BinaryPacket(const_iterator F, const_iterator L, Registry *R = 0)
-        : first(F), last(L), current(F), registry(R) {}
+       BinaryPacket() : registry_(nullptr)
+       {
+           first_ = last_ = current_ = nullptr;
+       }
+       BinaryPacket(Registry& r) : registry_(&r)
+       {
+           first_ = last_ = current_ = nullptr;
+       }
+       BinaryPacket(const_iterator f, const_iterator l, Registry* r = nullptr)
+           : first_(f), last_(l), current_(f), registry_(r)
+       {
+       }
 
-    const_iterator Begin() const { return first; }
-    const_iterator Current() const { return current; }
-    const_iterator Last() const { return last; }
+       [[nodiscard]] const_iterator Begin() const
+       {
+           return first_;
+       }
+       [[nodiscard]] const_iterator Current() const
+       {
+           return current_;
+       }
+       [[nodiscard]] const_iterator Last() const
+       {
+           return last_;
+       }
 
-    int Size() const { return (int)(last - first); }
-    bool Empty() const { return last == first; }
+       [[nodiscard]] int Size() const
+       {
+           return static_cast<int>(last_ - first_);
+       }
+       [[nodiscard]] bool Empty() const
+       {
+           return last_ == first_;
+       }
     bool Read(int len, Byte *dest);
-    bool CanRead(int len) const;
+    [[nodiscard]] bool CanRead(int len) const;
 
     template <class POD>
     bool Read(POD &pod) {
         return Read(sizeof(pod), reinterpret_cast<Byte *>(&pod));
     }
 
-    void SetRegistry(Registry *R) { registry = R; }
-    Registry *GetRegistry() const { return registry; }
-void Reset() { current = first; } 
+    void SetRegistry(Registry* r)
+    {
+        registry_ = r;
+    }
+    [[nodiscard]] Registry* GetRegistry() const
+    {
+        return registry_;
+    }
+void Reset() {
+    current_ = first_;
+}
 
     static void Register(Registry &, const char *);
 
-    friend bool operator<(const BinaryPacket &A, const BinaryPacket &B);
-    friend bool operator==(const BinaryPacket &A, const BinaryPacket &B);
+    friend bool operator<(const BinaryPacket& a, const BinaryPacket& b);
+    friend bool operator==(const BinaryPacket& a, const BinaryPacket& b);
 };
 
 StringStream &operator<<(StringStream &, BinaryPacket const &);

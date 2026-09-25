@@ -19,12 +19,9 @@ struct Traits<float>
                      Properties::Streaming | Properties::Assign |
                      Properties::Relational | Properties::Absolute |
                      Properties::Boolean> {
-    typedef TraitsBase<float, Number::Single,
-                       Properties::Arithmetic | Properties::Multiplicative |
-                           Properties::Streaming | Properties::Assign |
-                           Properties::Relational | Properties::Absolute |
-                           Properties::Boolean>
-        Tr;
+    using Tr = TraitsBase<float, Number::Single,
+                          Properties::Arithmetic | Properties::Multiplicative | Properties::Streaming |
+                              Properties::Assign | Properties::Relational | Properties::Absolute | Properties::Boolean>;
     using typename Tr::ConstReference;
     using typename Tr::Reference;
     using typename Tr::Store;
@@ -46,12 +43,9 @@ struct Traits<double>
                      Properties::Streaming | Properties::Assign |
                      Properties::Relational | Properties::Absolute |
                      Properties::Boolean> {
-    typedef TraitsBase<double, Number::Double,
-                       Properties::Arithmetic | Properties::Multiplicative |
-                           Properties::Streaming | Properties::Assign |
-                           Properties::Relational | Properties::Absolute |
-                           Properties::Boolean>
-        Tr;
+    using Tr = TraitsBase<double, Number::Double,
+                          Properties::Arithmetic | Properties::Multiplicative | Properties::Streaming |
+                              Properties::Assign | Properties::Relational | Properties::Absolute | Properties::Boolean>;
     using typename Tr::ConstReference;
     using typename Tr::Reference;
     using typename Tr::Store;

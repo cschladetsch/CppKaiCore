@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/Config/Base.h>
 
@@ -8,64 +8,106 @@ KAI_BEGIN
 
 class Array : public Container<Array> {
    public:
-    typedef std::vector<Object> Objects;
-    typedef Objects::const_iterator const_iterator;
-    typedef Objects::iterator iterator;
+       using Objects = std::vector<Object>;
+       using const_iterator = Objects::const_iterator;
+       using iterator = Objects::iterator;
 
    private:
-    Objects objects;
+       Objects objects_;
 
    public:
-    iterator begin() { return objects.begin(); }
-    iterator end() { return objects.end(); }
-    const_iterator begin() const { return objects.begin(); }
-    const_iterator end() const { return objects.end(); }
+       iterator Begin()
+       {
+           return objects_.begin();
+       }
+       iterator End()
+       {
+           return objects_.end();
+       }
+       [[nodiscard]] const_iterator Begin() const
+       {
+           return objects_.begin();
+       }
+       [[nodiscard]] const_iterator End() const
+       {
+           return objects_.end();
+       }
 
-    iterator Begin() { return objects.begin(); }
-    iterator End() { return objects.end(); }
-    const_iterator Begin() const { return objects.begin(); }
-    const_iterator End() const { return objects.end(); }
 
-    void Resize(int n) { objects.resize(n); }
-    Object At(int pos) const { return objects.at(pos); }
-    Object &RefAt(int pos) { return objects.at(pos); }
-    int Size() const { return (int)objects.size(); }
-    bool Empty() const { return objects.empty(); }
-    Object Front() const { return objects.front(); }
-    Object Back() const { return objects.back(); }
+    void Resize(int n) {
+        objects_.resize(n);
+    }
+    [[nodiscard]] Object At(int pos) const
+    {
+        return objects_.at(pos);
+    }
+    Object &RefAt(int pos) {
+        return objects_.at(pos);
+    }
+    [[nodiscard]] int Size() const
+    {
+        return static_cast<int>(objects_.size());
+    }
+    [[nodiscard]] bool Empty() const
+    {
+        return objects_.empty();
+    }
+    [[nodiscard]] Object Front() const
+    {
+        return objects_.front();
+    }
+    [[nodiscard]] Object Back() const
+    {
+        return objects_.back();
+    }
 
     void Clear();
     void Append(Object const &);
-    void PushBack(Object const &Q) { Append(Q); }
+    void PushBack(Object const& q)
+    {
+        Append(q);
+    }
     Object PopBack();
     void RemoveAt(int);
     void Insert(int index, Object const &);
 
-    iterator Erase(iterator A);
-    void Erase(Handle A);
-    void Erase(Object const &Q);
+    iterator Erase(iterator a);
+    void Erase(Handle a);
+    void Erase(Object const& q);
 
-    void Erase2(Object Q) { Erase(Q); }
-    void Append2(Object Q) { Append(Q); }
-    void Insert2(int index, Object Q) { Insert(index, Q); }
+    void Erase2(const Object& q)
+    {
+        Erase(q);
+    }
+    void Append2(const Object& q)
+    {
+        Append(q);
+    }
+    void Insert2(int index, const Object& q)
+    {
+        Insert(index, q);
+    }
 
-    friend bool operator==(const Array &A, const Array &B) {
-        return A.objects == B.objects;
+    friend bool operator==(const Array& a, const Array& b)
+    {
+        return a.objects_ == b.objects_;
     }
-    friend bool operator<(const Array &A, const Array &B) {
-        return A.objects < B.objects;
+    friend bool operator<(const Array& a, const Array& b)
+    {
+        return a.objects_ < b.objects_;
     }
-    friend Array operator+(const Array &A, const Array &B) {
+    friend Array operator+(const Array& a, const Array& b)
+    {
         Array result;
-        result.objects = A.objects;
-        result.objects.insert(result.objects.end(), B.objects.begin(),
-                              B.objects.end());
+        result.objects_ = a.objects_;
+        result.objects_.insert(result.objects_.end(), b.objects_.begin(), b.objects_.end());
         return result;
     }
-    friend Array operator+(const Array &A, const Object &B) {
+    friend Array operator+(const Array& a, const Object& b)
+    {
         Array result;
-        result.objects = A.objects;
-        result.objects.push_back(B);
+        result.objects_ = a.objects_;
+        result.objects_.push_back(b);
         return result;
     }
 
@@ -77,11 +119,16 @@ class Array : public Container<Array> {
     static void Register(Registry &);
 };
 
+inline Array::iterator begin(Array &a) { return a.Begin(); }
+inline Array::iterator end(Array &a) { return a.End(); }
+inline Array::const_iterator begin(Array const &a) { return a.Begin(); }
+inline Array::const_iterator end(Array const &a) { return a.End(); }
+
 StringStream &operator<<(StringStream &, const Array &);
 BinaryStream &operator<<(BinaryStream &, const Array &);
 BinaryStream &operator>>(BinaryStream &, Array &);
 
-HashValue GetHash(const Array &A);
+HashValue GetHash(const Array& a);
 
 KAI_TYPE_TRAITS(Array, Number::Array,
                 Properties::StringStreamInsert | Properties::BinaryStreaming |

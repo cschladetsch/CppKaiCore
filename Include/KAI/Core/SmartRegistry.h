@@ -28,12 +28,12 @@ class SmartRegistry {
    private:
     SmartInstances smart_instances_;
     SharedInstances shared_instances_;
-    std::shared_ptr<Memory::IAllocator> allocator_;
+    std::shared_ptr<memory::IAllocator> allocator_;
 
    public:
-    explicit SmartRegistry(std::shared_ptr<Memory::IAllocator> alloc = nullptr)
+    explicit SmartRegistry(std::shared_ptr<memory::IAllocator> alloc = nullptr)
         : allocator_(alloc ? alloc
-                           : std::make_shared<Memory::StandardAllocator>()) {}
+                           : std::make_shared<memory::StandardAllocator>()) {}
 
     // Move-only semantics for better performance
     SmartRegistry(const SmartRegistry&) = delete;
@@ -170,7 +170,7 @@ class SmartRegistry {
     }
 
     /// Get allocator
-    std::shared_ptr<Memory::IAllocator> GetAllocator() const {
+    std::shared_ptr<memory::IAllocator> GetAllocator() const {
         return allocator_;
     }
 
@@ -184,7 +184,7 @@ class SmartRegistry {
 
 /// Factory function for creating smart registry
 inline std::unique_ptr<SmartRegistry> MakeSmartRegistry(
-    std::shared_ptr<Memory::IAllocator> allocator = nullptr) {
+    std::shared_ptr<memory::IAllocator> allocator = nullptr) {
     return std::make_unique<SmartRegistry>(allocator);
 }
 

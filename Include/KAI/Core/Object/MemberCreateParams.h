@@ -4,7 +4,8 @@
 
 KAI_BEGIN
 
-namespace MemberCreateParams {
+namespace member_create_params
+{
 enum Enum {
     Create = 1,
 

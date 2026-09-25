@@ -1,4 +1,4 @@
-#include <KAI/Core/BuiltinTypes.h>
+﻿#include <KAI/Core/BuiltinTypes.h>
 #include <KAI/Core/Exception.h>
 #include <KAI/Core/Object/ClassBuilder.h>
 #include <KAI/Core/Object/Object.h>
@@ -10,7 +10,7 @@ void Array::RemoveAt(int index) {
         KAI_THROW_1(BadIndex, index);
     }
 
-    objects.erase(begin() + index);
+    objects_.erase(Begin() + index);
 }
 
 void Array::Insert(int index, Object const &obj) {
@@ -19,39 +19,39 @@ void Array::Insert(int index, Object const &obj) {
     }
 
     if (Attach(obj)) {
-        objects.insert(begin() + index, obj);
+        objects_.insert(Begin() + index, obj);
     }
 }
 
 Array::iterator Array::Erase(iterator A) {
     Detach(*A);
-    return objects.erase(A);
+    return objects_.erase(A);
 }
 
 void Array::Append(Object const &Q) {
-    if (Attach(Q)) objects.push_back(Q);
+    if (Attach(Q)) objects_.push_back(Q);
 }
 
 Object Array::PopBack() {
-    if (objects.empty()) {
+    if (objects_.empty()) {
         KAI_THROW_0(EmptyStack);
     }
-    Object Q = objects.back();
+    Object Q = objects_.back();
     Detach(Q);
-    objects.pop_back();
+    objects_.pop_back();
     return Q;
 }
 
 void Array::Clear() {
-    auto A = begin(), B = end();
+    auto A = Begin(), B = End();
     for (; A != B; ++A) Detach(*A);
-    objects.clear();
+    objects_.clear();
 }
 
 void Array::Erase(Object const &Q) { Erase(Q.GetHandle()); }
 
 void Array::Erase(Handle H) {
-    auto A = objects.begin(), B = objects.end();
+    auto A = objects_.begin(), B = objects_.end();
     for (; A != B; ++A) {
         if (A->GetHandle() == H) {
             Erase(A);
@@ -110,10 +110,10 @@ static Array ConcatArrays(const Array &A, const Array &B) {
 */
 
 void Array::Register(Registry &R) {
-    void (Array::*remove_method)(Object) = &Array::Erase2;
+    void (Array::*remove_method)(const Object &) = &Array::Erase2;
 
     ClassBuilder<Array>(R, Label(Type::Traits<Array>::Name()))
-        .Methods
+        .methods
         // TODO ("Append", &Array::Append2, "Add an Object to the end")
         ("Erase", remove_method, "Remove an object from the sequence")(
             "RemoveAt", &Array::RemoveAt,

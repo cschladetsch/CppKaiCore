@@ -7,6 +7,7 @@
 
 #include <list>
 #include <unordered_map>
+#include <utility>
 
 #include "KAI/Core/Exception/ExceptionMacros.h"
 #include "KAI/Core/Object/Label.h"
@@ -24,25 +25,32 @@ class PropertyBase;
 /// interface that all Class<T>s must define
 class ClassBase {
    public:
-    typedef std::unordered_map<Label, MethodBase *, detail::LabelHash> Methods;
-    typedef std::unordered_map<Label, PropertyBase *, detail::LabelHash>
-        Properties;
-    typedef std::list<Object> ObjectList;
+       using Methods = std::unordered_map<Label, MethodBase*, detail::LabelHash>;
+       using Properties = std::unordered_map<Label, PropertyBase*, detail::LabelHash>;
+       using ObjectList = std::list<Object>;
 
    protected:
     Label name_;
     Methods methods_;
     Properties properties_;
-    Type::Number type_number_;
+    Type::Number typeNumber_;
 
-   public:
-    ClassBase(Label const &name, Type::Number T)
-        : name_(name), type_number_(T) {}
+public:
+    ClassBase(Label name, Type::Number t) : name_(std::move(name)), typeNumber_(t) {}
     virtual ~ClassBase();
 
-    const Label &GetName() const { return name_; }
-    const Label &GetLabel() const { return GetName(); }
-    Type::Number GetTypeNumber() const { return type_number_; }
+    [[nodiscard]] const Label& GetName() const
+    {
+        return name_;
+    }
+    [[nodiscard]] const Label& GetLabel() const
+    {
+        return GetName();
+    }
+    [[nodiscard]] Type::Number GetTypeNumber() const
+    {
+        return typeNumber_;
+    }
 
     virtual void SetReferencedObjectsColor(StorageBase &base,
                                            ObjectColor::Color color,
@@ -51,10 +59,17 @@ class ClassBase {
     void GetPropertyObjects(StorageBase &object, ObjectList &contained) const;
 
     /// methods_
-    void AddMethod(const Label &L, MethodBase *M) { methods_[L] = M; }
-    const Methods &GetMethods() const { return methods_; }
-    MethodBase *GetMethod(const Label &L) const {
-        const auto found = methods_.find(L);
+    void AddMethod(const Label& l, MethodBase* m)
+    {
+        methods_[l] = m;
+    }
+    [[nodiscard]] const Methods& GetMethods() const
+    {
+        return methods_;
+    }
+    [[nodiscard]] MethodBase* GetMethod(const Label& l) const
+    {
+        const auto found = methods_.find(l);
         return found == methods_.end() ? nullptr : found->second;
     }
 
@@ -62,20 +77,29 @@ class ClassBase {
     void AddProperty(Label const &label, PropertyBase *property) {
         properties_[label] = property;
     }
-    bool HasProperty(Label const &label) const {
-        return properties_.find(label) != properties_.end();
+    [[nodiscard]] bool HasProperty(Label const& label) const
+    {
+        return properties_.contains(label);
     }
 
-    Properties const &GetProperties() const { return properties_; }
+    [[nodiscard]] Properties const& GetProperties() const
+    {
+        return properties_;
+    }
 
-    PropertyBase const &GetProperty(Label const &L) const {
-        auto found = properties_.find(L);
-        if (found == properties_.end())
-            KAI_THROW_2(UnknownProperty, GetName(), L);
+    [[nodiscard]] PropertyBase const& GetProperty(Label const& l) const
+    {
+        auto found = properties_.find(l);
+        if (found == properties_.end()) {
+            KAI_THROW_2(UnknownProperty, GetName(), l);
+        }
         return *found->second;
     }
 
-    bool HasOperation(int N) const { return HasTraitsProperty(N); }
+    [[nodiscard]] bool HasOperation(int n) const
+    {
+        return HasTraitsProperty(n);
+    }
 
     virtual void MakeReachableGrey(StorageBase &base) const = 0;
     virtual bool CanBlackenReferencedObjects(StorageBase &base) const {
@@ -84,84 +108,95 @@ class ClassBase {
     virtual void GetContainedObjects(StorageBase &object,
                                      ObjectList &contained) const = 0;
     virtual void CreateProperties(StorageBase &object) const = 0;
-    virtual Object Duplicate(StorageBase const &) const = 0;
+    [[nodiscard]] virtual Object Duplicate(StorageBase const&) const = 0;
     virtual void DetachFromContainer(StorageBase &, Object const &) const = 0;
-    virtual int GetTraitsProperties() const = 0;
-    virtual bool HasTraitsProperty(int N) const = 0;
+    [[nodiscard]] virtual int GetTraitsProperties() const = 0;
+    [[nodiscard]] virtual bool HasTraitsProperty(int n) const = 0;
     virtual StorageBase *NewStorage(Registry *, Handle) const = 0;
     virtual void Create(StorageBase &) const = 0;
     virtual bool Destroy(StorageBase &) const = 0;
     virtual void Delete(StorageBase &) const = 0;
     virtual void Assign(StorageBase &, StorageBase const &) const = 0;
-    virtual void SetSwitch(StorageBase &Q, int S, bool M) const = 0;
-    void SetMarked(StorageBase &Q, bool M) const;
-    virtual void SetMarked2(StorageBase &Q, bool M) const = 0;
+    virtual void SetSwitch(StorageBase& q, int s, bool m) const = 0;
+    void SetMarked(StorageBase& q, bool m) const;
+    virtual void SetMarked2(StorageBase& q, bool m) const = 0;
     virtual Object UpCast(StorageBase &) const = 0;
     virtual Object CrossCast(StorageBase &, Type::Number) const = 0;
     virtual Object DownCast(StorageBase &, Type::Number) const = 0;
-    virtual HashValue GetHashValue(const StorageBase &) const = 0;
-    virtual Object Absolute(const StorageBase &) const = 0;
-    virtual bool Less(const StorageBase &, const StorageBase &) const = 0;
-    virtual bool Greater(const StorageBase &, const StorageBase &) const = 0;
-    virtual bool Equiv(const StorageBase &, const StorageBase &) const = 0;
-    virtual bool Boolean(const StorageBase &) const = 0;
+    [[nodiscard]] virtual HashValue GetHashValue(const StorageBase&) const = 0;
+    [[nodiscard]] virtual Object Absolute(const StorageBase&) const = 0;
+    [[nodiscard]] virtual bool Less(const StorageBase&, const StorageBase&) const = 0;
+    [[nodiscard]] virtual bool Greater(const StorageBase&, const StorageBase&) const = 0;
+    [[nodiscard]] virtual bool Equiv(const StorageBase&, const StorageBase&) const = 0;
+    [[nodiscard]] virtual bool Boolean(const StorageBase&) const = 0;
     virtual void Insert(StringStream &, const StorageBase &) const = 0;
     virtual StorageBase *Extract(Registry &, StringStream &) const = 0;
     virtual void ExtractValue(Object &object,
                               StringStream &strstream) const = 0;
     virtual void Insert(BinaryStream &, const StorageBase &) const = 0;
     virtual StorageBase *Extract(Registry &, BinaryStream &) const = 0;
-    virtual StorageBase *Plus(StorageBase const &,
-                              StorageBase const &) const = 0;
-    virtual StorageBase *Minus(StorageBase const &,
-                               StorageBase const &) const = 0;
-    virtual StorageBase *Multiply(StorageBase const &,
-                                  StorageBase const &) const = 0;
-    virtual StorageBase *Divide(StorageBase const &,
-                                StorageBase const &) const = 0;
+    [[nodiscard]] virtual StorageBase* Plus(StorageBase const&, StorageBase const&) const = 0;
+    [[nodiscard]] virtual StorageBase* Minus(StorageBase const&, StorageBase const&) const = 0;
+    [[nodiscard]] virtual StorageBase* Multiply(StorageBase const&, StorageBase const&) const = 0;
+    [[nodiscard]] virtual StorageBase* Divide(StorageBase const&, StorageBase const&) const = 0;
 
-    Object Absolute(Object const &object) const {
+    [[nodiscard]] Object Absolute(Object const& object) const
+    {
         return Absolute(object.GetStorageBase());
     }
 
-    bool Less(Object const &lhs, Object const &rhs) const {
+    [[nodiscard]] bool Less(Object const& lhs, Object const& rhs) const
+    {
         return Less(lhs.GetStorageBase(), rhs.GetStorageBase());
     }
 
-    bool Equiv(Object const &lhs, Object const &rhs) const {
+    [[nodiscard]] bool Equiv(Object const& lhs, Object const& rhs) const
+    {
         return Equiv(lhs.GetStorageBase(), rhs.GetStorageBase());
     }
 
-    bool Greater(Object const &lhs, Object const &rhs) const {
+    [[nodiscard]] bool Greater(Object const& lhs, Object const& rhs) const
+    {
         return Greater(lhs.GetStorageBase(), rhs.GetStorageBase());
     }
 
-    bool Boolean(Object const &Q) const { return Boolean(Q.GetStorageBase()); }
-
-    void Assign(Object A, Object B) const {
-        Assign(A.GetStorageBase(), B.GetStorageBase());
-    }
-    Object Plus(Object A, Object B) const {
-        return *Plus(A.GetStorageBase(), B.GetStorageBase());
-    }
-    Object Minus(Object A, Object B) const {
-        return *Minus(A.GetStorageBase(), B.GetStorageBase());
-    }
-    Object Multiply(Object A, Object B) const {
-        return *Multiply(A.GetStorageBase(), B.GetStorageBase());
-    }
-    Object Divide(Object A, Object B) const {
-        return *Divide(A.GetStorageBase(), B.GetStorageBase());
+    [[nodiscard]] bool Boolean(Object const& q) const
+    {
+        return Boolean(q.GetStorageBase());
     }
 
-    bool Equiv2(const Object &A, const Object &B) const {
-        return Equiv(A.GetStorageBase(), B.GetStorageBase());
+    void Assign(const Object& a, const Object& b) const
+    {
+        Assign(a.GetStorageBase(), b.GetStorageBase());
     }
-    bool Less2(const Object &A, const Object &B) const {
-        return Less(A.GetStorageBase(), B.GetStorageBase());
+    [[nodiscard]] Object Plus(const Object& a, const Object& b) const
+    {
+        return *Plus(a.GetStorageBase(), b.GetStorageBase());
     }
-    bool Greater2(const Object &A, const Object &B) const {
-        return Greater(A.GetStorageBase(), B.GetStorageBase());
+    [[nodiscard]] Object Minus(const Object& a, const Object& b) const
+    {
+        return *Minus(a.GetStorageBase(), b.GetStorageBase());
+    }
+    [[nodiscard]] Object Multiply(const Object& a, const Object& b) const
+    {
+        return *Multiply(a.GetStorageBase(), b.GetStorageBase());
+    }
+    [[nodiscard]] Object Divide(const Object& a, const Object& b) const
+    {
+        return *Divide(a.GetStorageBase(), b.GetStorageBase());
+    }
+
+    [[nodiscard]] bool Equiv2(const Object& a, const Object& b) const
+    {
+        return Equiv(a.GetStorageBase(), b.GetStorageBase());
+    }
+    [[nodiscard]] bool Less2(const Object& a, const Object& b) const
+    {
+        return Less(a.GetStorageBase(), b.GetStorageBase());
+    }
+    [[nodiscard]] bool Greater2(const Object& a, const Object& b) const
+    {
+        return Greater(a.GetStorageBase(), b.GetStorageBase());
     }
 };
 

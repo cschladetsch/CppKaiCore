@@ -6,28 +6,31 @@ namespace meta {
 /// Null is used to represent the equivalent to a 'null-pointer' in compile-time
 /// space
 struct Null {
-    typedef Null Next, Prev, Value, Type;
+    using Next = Null;
+    using Prev = Null;
+    using Value = Null;
+    using Type = Null;
 };
 
 /// Compile-time conditional evaluation.
 template <bool T, class A, class B>
 struct If {
-    typedef A Type;
+    using Type = A;
 };
 
 template <class A, class B>
 struct If<false, A, B> {
-    typedef B Type;
+    using Type = B;
 };
 
 template <class A, class B>
 struct SameType {
-    enum { value = 0 };
+    enum { Value = 0 };
 };
 
 template <class A>
 struct SameType<A, A> {
-    enum { value = 1 };
+    enum { Value = 1 };
 };
 
 template <class T>

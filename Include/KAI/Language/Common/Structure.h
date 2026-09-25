@@ -18,7 +18,7 @@ enum class Structure {
     Class,       // a collection of properties_, events, and methods_
 };
 
-StringStream &operator<<(StringStream &S, const Structure &T);
-StringStream &operator>>(StringStream &S, Structure &T);
+StringStream& operator<<(StringStream& s, const Structure& t);
+StringStream& operator>>(StringStream& s, Structure& t);
 
 KAI_END

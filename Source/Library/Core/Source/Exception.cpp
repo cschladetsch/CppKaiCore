@@ -1,15 +1,15 @@
-#include <KAI/Core/BuiltinTypes.h>
+﻿#include <KAI/Core/BuiltinTypes.h>
 
 KAI_BEGIN
 
-namespace Exception {
+namespace exception {
 std::string Base::ToString() const {
     StringStream S;
-    std::string loc = location.ToString().c_str();
+    std::string loc = location.ToString().StdString();
     loc = loc.substr(loc.find_last_of('/') + 1);
     S << loc << text << ": ";
     WriteExtendedInformation(S);
-    return S.ToString().c_str();
+    return S.ToString().StdString();
 }
 
 void TypeMismatch::WriteExtendedInformation(StringStream &S) const {
@@ -18,7 +18,7 @@ void TypeMismatch::WriteExtendedInformation(StringStream &S) const {
 }
 
 void UnknownTypeNumber::WriteExtendedInformation(StringStream &S) const {
-    S << "type=" << type_number;
+    S << "type=" << typeNumber;
 }
 
 void UnknownObject::WriteExtendedInformation(StringStream &S) const {
@@ -30,19 +30,19 @@ void ObjectNotFound::WriteExtendedInformation(StringStream &S) const {
 }
 
 void NoOperation::WriteExtendedInformation(StringStream &S) const {
-    S << "type=" << type_number << ", type_property=" << type_property;
+    S << "type=" << typeNumber << ", typeProperty=" << typeProperty;
 }
 
 void PacketExtraction::WriteExtendedInformation(StringStream &S) const {
-    S << "type=" << type_number;
+    S << "type=" << typeNumber;
 }
 
 void OutOfBounds::WriteExtendedInformation(StringStream &S) const {
-    S << "type=" << type_number << ", index=" << index;
+    S << "type=" << typeNumber << ", index=" << index;
 }
 
 void PacketInsertion::WriteExtendedInformation(StringStream &S) const {
-    S << "type=" << type_number;
+    S << "type=" << typeNumber;
 }
 
 void CannotResolve::WriteExtendedInformation(StringStream &S) const {
@@ -63,7 +63,7 @@ void ObjectNotInTree::WriteExtendedInformation(StringStream &S) const {
 }
 
 void UnknownMethod::WriteExtendedInformation(StringStream &S) const {
-    S << "name_=" << name_ << ", class=" << class_name_;
+    S << "name=" << name << ", class=" << className;
 }
 
 void UnknownHandle::WriteExtendedInformation(StringStream &S) const {
@@ -100,9 +100,9 @@ void FileNotFound::WriteExtendedInformation(StringStream &S) const {
 void UnknownProperty::WriteExtendedInformation(StringStream &S) const {
     S << "class=" << klass << ", property=" << prop;
 }
-}  // namespace Exception
+}  // namespace exception
 
-StringStream &operator<<(StringStream &S, Exception::Base const &E) {
+StringStream &operator<<(StringStream &S, exception::Base const &E) {
     return S << E.ToString();
 }
 

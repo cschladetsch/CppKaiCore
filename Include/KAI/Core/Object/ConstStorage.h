@@ -9,19 +9,27 @@ KAI_BEGIN
 
 template <class T>
 class ConstStorage : public StorageBase {
-    typedef typename Type::Traits<T> Tr;
-    typedef typename Tr::Store Store;
+    using Tr = typename Type::Traits<T>;
+    using Store = typename Tr::Store;
 
-   protected:
-    Store stored;
+protected:
+    Store stored_;
 
-   public:
-    ConstStorage(const ObjectConstructParams &P)
-        : StorageBase(P) {}  //{ SetClean(); }
+public:
+    ConstStorage(const ObjectConstructParams& p) : StorageBase(p) {} //{ SetClean(); }
 
-    typename Tr::ConstReference GetConstReference() const { return stored; }
-    typename Tr::ConstReference operator*() const { return stored; }
-    typename Tr::ConstPointer operator->() const { return &stored; }
+    [[nodiscard]] Tr::ConstReference GetConstReference() const
+    {
+        return stored_;
+    }
+    Tr::ConstReference operator*() const
+    {
+        return stored_;
+    }
+    Tr::ConstPointer operator->() const
+    {
+        return &stored_;
+    }
 };
 
 KAI_END

@@ -1,4 +1,4 @@
-#include <KAI/Core/Config/Base.h>
+﻿#include <KAI/Core/Config/Base.h>
 #include <KAI/Core/Registry.h>
 #include <KAI/Language/Common/TranslatorCommon.h>
 
@@ -10,7 +10,7 @@ TranslatorCommon::TranslatorCommon(Registry &r) : ProcessCommon(r) {}
 
 void TranslatorCommon::Append(Object const &ob) {
     try {
-        if (stack.empty()) {
+        if (stack_.empty()) {
             KAI_TRACE_ERROR() << "TranslatorCommon::Append: Stack is empty";
             KAI_THROW_0(EmptyStack);
         }
@@ -116,7 +116,7 @@ void TranslatorCommon::Append(Object const &ob) {
         }
 
         code->Append(ob);
-    } catch (kai::Exception::Base &e) {
+    } catch (kai::exception::Base &e) {
         KAI_TRACE_ERROR() << "Exception in TranslatorCommon::Append: "
                           << e.ToString();
         throw;
@@ -140,7 +140,7 @@ void TranslatorCommon::AppendDirectOperation(Operation::Type op) {
                 << Operation::ToString(op);
 
     Object opObject = reg_->New<Operation>(op);
-    if (stack.empty()) {
+    if (stack_.empty()) {
         KAI_TRACE_ERROR()
             << "TranslatorCommon::AppendDirectOperation: Stack is empty";
         return;
@@ -164,7 +164,7 @@ void TranslatorCommon::AppendDirectOperation(Operation::Type op) {
 }
 
 void TranslatorCommon::MarkAsRhoExpression() {
-    if (stack.empty()) {
+    if (stack_.empty()) {
         KAI_TRACE_ERROR()
             << "TranslatorCommon::MarkAsRhoExpression: Stack is empty";
         return;
@@ -178,25 +178,25 @@ void TranslatorCommon::MarkAsRhoExpression() {
     }
 }
 
-Pointer<Continuation> TranslatorCommon::Top() { return stack.back(); }
+Pointer<Continuation> TranslatorCommon::Top() { return stack_.back(); }
 
 void TranslatorCommon::PushNew() {
     Pointer<Continuation> c = reg_->New<Continuation>();
     c->SetCode(reg_->New<Array>());
 
-    stack.push_back(c);
+    stack_.push_back(c);
 }
 
 Pointer<Continuation> TranslatorCommon::Pop() {
     auto top = Top();
-    stack.pop_back();
+    stack_.pop_back();
     return top;
 }
 
 std::string TranslatorCommon::ToString() const {
     StringStream str;
-    for (auto ob : *stack.back()->GetCode()) str << ' ' << ob;
-    return str.ToString().c_str();
+    for (auto ob : *stack_.back()->GetCode()) str << ' ' << ob;
+    return str.ToString().StdString();
 }
 
 KAI_END

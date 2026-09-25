@@ -1,4 +1,4 @@
-#include <KAI/Core/BuiltinTypes/Array.h>
+﻿#include <KAI/Core/BuiltinTypes/Array.h>
 #include <KAI/Core/Object/IObject.h>
 #include <KAI/Core/Registry.h>
 
@@ -7,27 +7,27 @@
 
 KAI_BEGIN
 
-void StorageBase::Detach(Object const &parent) {
-    // The object calling Detach wants to be removed from the given parent
-    StorageBase *parentBase = GetRegistry()->GetStorageBase(parent.GetHandle());
+void StorageBase::Detach(Object const &parent_) {
+    // The object calling Detach wants to be removed from the given parent_
+    StorageBase *parentBase = GetRegistry()->GetStorageBase(parent_.GetHandle());
     if (!parentBase) return;
 
-    // First check if parent has this object in its dictionary
-    for (auto const &[label, object] : parentBase->dictionary) {
+    // First check if parent_ has this object in its dictionary_
+    for (auto const &[label, object] : parentBase->dictionary_) {
         if (object.GetHandle() == GetHandle()) {
             parentBase->Remove(label);
             return;
         }
     }
 
-    // For containers like Array, we need to call their Erase method directly
+    // For containers_ like Array, we need to call their Erase method directly
     // since the generic ContainerOps::Erase is not implemented
     if (parentBase->GetClass()->GetTypeNumber() == Type::Number::Array) {
         // Cast to Array and call Erase
         Array &array = Deref<Array>(Object(parentBase));
         array.Erase(GetHandle());
     } else {
-        // Otherwise, ask parent to detach this object from its container
+        // Otherwise, ask parent_ to detach this object from its container
         parentBase->GetClass()->DetachFromContainer(*parentBase, *this);
     }
 }
@@ -42,14 +42,14 @@ void StorageBase::SetSwitch(int S, bool N) {
     if (klass != nullptr && S != Clean) klass->SetSwitch(*this, S, N);
 }
 
-void StorageBase::SetParentHandle(Handle H) { parent = H; }
+void StorageBase::SetParentHandle(Handle H) { parent_ = H; }
 
 Object StorageBase::Get(const Label &L) const {
     if (GetClass()->HasProperty(L))
         return GetClass()->GetProperty(L).GetValue(*this);
 
-    Dictionary::const_iterator A = dictionary.find(L);
-    if (A == dictionary.end()) return Object();
+    Dictionary::const_iterator A = dictionary_.find(L);
+    if (A == dictionary_.end()) return Object();
 
     return A->second;
 }
@@ -73,8 +73,8 @@ void StorageBase::Set(const Label &name, Object const &child) {
 
     // update the child object
     if (!child.Exists()) {
-        const auto ch = dictionary.find(name);
-        if (ch != dictionary.end()) dictionary.erase(ch);
+        const auto ch = dictionary_.find(name);
+        if (ch != dictionary_.end()) dictionary_.erase(ch);
 
         return;
     }
@@ -86,7 +86,7 @@ void StorageBase::Set(const Label &name, Object const &child) {
     bool clean = base.IsClean();
     bool konst = base.IsConst();
     bool managed = base.IsManaged();
-    base.switches = switches;  // inherit properties_ of parent...
+    base.switches = switches;  // inherit properties_ of parent_...
 
     if (clean)  // ...but preserve cleanliness
         base.switches |= IObject::Clean;
@@ -99,23 +99,23 @@ void StorageBase::Set(const Label &name, Object const &child) {
     if (managed)  // ...and managed
         base.switches |= IObject::Managed;
 
-    // Add it to this dictionary, inform it of being added to a container.
-    dictionary[name] = child;
+    // Add it to this dictionary_, inform it of being added to a container.
+    dictionary_[name] = child;
     base.AddedToContainer(*this);
 }
 
 bool StorageBase::Has(const Label &L) const {
-    const auto object = dictionary.find(L);
-    return object != dictionary.end() && object->second.Exists();
+    const auto object = dictionary_.find(L);
+    return object != dictionary_.end() && object->second.Exists();
 }
 
 void StorageBase::Remove(const Label &label) {
-    const auto found = dictionary.find(label);
-    if (found == dictionary.end()) return;
+    const auto found = dictionary_.find(label);
+    if (found == dictionary_.end()) return;
 
     SetDirty();
     StorageBase *child = found->second.GetBasePtr();
-    dictionary.erase(found);
+    dictionary_.erase(found);
 
     if (child) {
         child->SetParentHandle(Handle());
@@ -139,13 +139,13 @@ void StorageBase::SetColorRecursive(ObjectColor::Color color,
     if (!SetColor(color)) return;
 
     GetClass()->SetReferencedObjectsColor(*this, color, handles);
-    if (dictionary.empty()) return;
+    if (dictionary_.empty()) return;
 
     // Use non-recursive iteration with a stack to avoid stack overflow
     std::vector<StorageBase *> stack;
 
     // First pass: add all direct children to the stack
-    for (Dictionary::value_type const &child : dictionary) {
+    for (Dictionary::value_type const &child : dictionary_) {
         StorageBase *sub =
             GetRegistry()->GetStorageBase(child.second.GetHandle());
         if (sub && handles.find(sub->GetHandle()) == handles.end()) {
@@ -165,7 +165,7 @@ void StorageBase::SetColorRecursive(ObjectColor::Color color,
                                                        handles);
 
         // Add all child objects to the stack if not already processed
-        for (Dictionary::value_type const &child : current->dictionary) {
+        for (Dictionary::value_type const &child : current->dictionary_) {
             StorageBase *sub =
                 GetRegistry()->GetStorageBase(child.second.GetHandle());
             if (sub && handles.find(sub->GetHandle()) == handles.end()) {
@@ -180,9 +180,9 @@ bool StorageBase::SetColor(ObjectColor::Color color) {
     auto reg = GetRegistry();
     if (!reg->SetColor(*this, color)) return false;
 
-    this->color = color;
+    this->color_ = color;
     if (color == ObjectColor::White) {
-        for (const auto &container : containers) {
+        for (const auto &container : containers_) {
             StorageBase *cont = GetRegistry()->GetStorageBase(container);
             if (cont && cont->IsBlack()) cont->SetColor(ObjectColor::Grey);
         }
@@ -192,7 +192,7 @@ bool StorageBase::SetColor(ObjectColor::Color color) {
 }
 
 void StorageBase::MakeReachableGrey() {
-    for (const auto &child : dictionary) {
+    for (const auto &child : dictionary_) {
         StorageBase *sub =
             GetRegistry()->GetStorageBase(child.second.GetHandle());
         if (!sub) continue;
@@ -205,7 +205,7 @@ void StorageBase::MakeReachableGrey() {
 
 bool StorageBase::CanBlacken() {
     // Check if all children can be blackened
-    for (const auto &[_, child] : dictionary) {
+    for (const auto &[_, child] : dictionary_) {
         StorageBase *sub = GetRegistry()->GetStorageBase(child.GetHandle());
         if (!sub || sub->IsWhite()) {
             return false;
@@ -218,24 +218,24 @@ bool StorageBase::CanBlacken() {
 
 void StorageBase::RemovedFromContainer(Object const &container) {
     ObjectColor::Color color = ObjectColor::White;
-    StorageBase *parent = GetRegistry()->GetStorageBase(GetParentHandle());
-    bool parent_is_black = parent && parent->IsBlack();
+    StorageBase *parent_ = GetRegistry()->GetStorageBase(GetParentHandle());
+    bool parent_is_black = parent_ && parent_->IsBlack();
     if (parent_is_black) color = ObjectColor::Grey;
 
     bool removed = false;
-    auto iter = containers.begin(), end = containers.end();
+    auto iter = containers_.begin(), end = containers_.end();
     for (; iter != end;) {
         StorageBase *base = GetRegistry()->GetStorageBase(*iter);
         if (!base) {
-            iter = containers.erase(iter);
+            iter = containers_.erase(iter);
             continue;
         }
 
         if (!removed && *iter == container.GetHandle()) {
-            iter = containers.erase(iter);
+            iter = containers_.erase(iter);
             removed = true;
             if (parent_is_black) {
-                // if removed from container and parent is black_ early out
+                // if removed from container and parent_ is black_ early out
                 break;
             } else {
                 // we need to check for other black_ parents to enforce the
@@ -247,7 +247,7 @@ void StorageBase::RemovedFromContainer(Object const &container) {
         if (base->IsBlack()) {
             color = ObjectColor::Grey;
             parent_is_black = true;
-            // if any parent container is black_, and we have already removed
+            // if any parent_ container is black_, and we have already removed
             // from the given container, we can early out
             if (removed) break;
         }
@@ -260,7 +260,7 @@ void StorageBase::RemovedFromContainer(Object const &container) {
 
 void StorageBase::DetermineNewColor() {
     // removing from an empty container will still traverse through other
-    // containers to determine new color
+    // containers_ to determine new color
     RemovedFromContainer(Object());
 }
 
@@ -268,7 +268,7 @@ void StorageBase::AddedToContainer(Object const &container) {
     if (container.GetHandle() == GetHandle())
         KAI_THROW_1(InternalError, "Can't add a container to itself.");
 
-    containers.push_back(container.GetHandle());
+    containers_.push_back(container.GetHandle());
     if (IsWhite()) SetGrey();
 }
 
@@ -278,9 +278,9 @@ void StorageBase::SetClean(bool clean) {
 }
 
 void StorageBase::DetachFromContainers() {
-    if (containers.empty()) return;
+    if (containers_.empty()) return;
 
-    Containers tmp = containers;
+    Containers tmp = containers_;
     Containers::const_iterator iter = tmp.begin(), end = tmp.end();
     for (; iter != end; ++iter) {
         StorageBase *cont = GetRegistry()->GetStorageBase(*iter);
@@ -296,12 +296,12 @@ void StorageBase::Delete() {
 
     SetManaged(true);
 
-    // Remove from all containers.
+    // Remove from all containers_.
     DetachFromContainers();
 
-    // remove from parent
-    StorageBase *parent = GetParentBasePtr();
-    if (parent != 0) parent->Remove(GetLabel());
+    // remove from parent_
+    StorageBase *parent_ = GetParentBasePtr();
+    if (parent_ != 0) parent_->Remove(GetLabel());
 
     // Set this and all referent objects to be white_, and mark it for deletion.
     SetColorRecursive(ObjectColor::White);

@@ -1,4 +1,4 @@
-#include <KAI/Core/BuiltinTypes.h>
+﻿#include <KAI/Core/BuiltinTypes.h>
 #include <KAI/Core/Exception.h>
 #include <KAI/Executor/Executor.h>
 
@@ -29,8 +29,8 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                     registry = data_.GetRegistry();
                 } else {
                     // Try to use Self if available
-                    if (Self && Self->GetRegistry()) {
-                        registry = Self->GetRegistry();
+                    if (self && self->GetRegistry()) {
+                        registry = self->GetRegistry();
                     } else {
                         KAI_THROW_1(Base,
                                     "PerformBinaryOp: No valid registry found");
@@ -96,7 +96,7 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                         ("Type error: mixed string/non-string addition is not "
                          "allowed (" +
                          leftType + " + " + rightType + ")")
-                            .c_str());
+                            .CStr());
                 }
                 // Array + Array = concatenated array
                 else if (A.IsType<Array>() && B.IsType<Array>()) {
@@ -121,7 +121,7 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                             if (result) {
                                 return Object(ObjectConstructParams(result));
                             }
-                        } catch (const Exception::Base &e) {
+                        } catch (const exception::Base &e) {
                             throw;
                         }
                     }
@@ -165,7 +165,7 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                             if (result) {
                                 return Object(ObjectConstructParams(result));
                             }
-                        } catch (const Exception::Base &e) {
+                        } catch (const exception::Base &e) {
                             throw;
                         }
                     }
@@ -219,7 +219,7 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                             if (result) {
                                 return Object(ObjectConstructParams(result));
                             }
-                        } catch (const Exception::Base &e) {
+                        } catch (const exception::Base &e) {
                             throw;
                         }
                     }
@@ -279,7 +279,7 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                             if (result) {
                                 return Object(ObjectConstructParams(result));
                             }
-                        } catch (const Exception::Base &e) {
+                        } catch (const exception::Base &e) {
                             throw;
                         }
                     }
@@ -396,7 +396,7 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                             bool result = classPtr->Less(A.GetStorageBase(),
                                                          B.GetStorageBase());
                             return createNew(result);
-                        } catch (const Exception::Base &e) {
+                        } catch (const exception::Base &e) {
                             throw;
                         }
                     }
@@ -444,7 +444,7 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                             bool result = classPtr->Greater(A.GetStorageBase(),
                                                             B.GetStorageBase());
                             return createNew(result);
-                        } catch (const Exception::Base &e) {
+                        } catch (const exception::Base &e) {
                             throw;
                         }
                     }
@@ -575,7 +575,7 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                         }
 
                         KAI_THROW_1(BadIndex, index);
-                    } catch (const Exception::Base &e) {
+                    } catch (const exception::Base &e) {
                         throw;
                     } catch (const std::exception &e) {
                         KAI_THROW_1(Base, e.what());
@@ -591,19 +591,19 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                             index < static_cast<int>(list.Size())) {
                             // For lists, we need to iterate to the correct
                             // position
-                            auto it = list.begin();
-                            for (int i = 0; i < index && it != list.end();
+                            auto it = list.Begin();
+                            for (int i = 0; i < index && it != list.End();
                                  ++i, ++it) {
                                 // Just advance the iterator
                             }
 
-                            if (it != list.end()) {
+                            if (it != list.End()) {
                                 return *it;
                             }
                         }
 
                         KAI_THROW_1(BadIndex, index);
-                    } catch (const Exception::Base &e) {
+                    } catch (const exception::Base &e) {
                         throw;
                     } catch (const std::exception &e) {
                         KAI_THROW_1(Base, e.what());
@@ -616,13 +616,13 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                         auto it = map.Find(B);
 
                         // Check if the key exists
-                        if (it != map.end()) {
+                        if (it != map.End()) {
                             // Return the value from the iterator
                             return it->second;
                         }
 
                         KAI_THROW_1(Base, "Key not found in map");
-                    } catch (const Exception::Base &e) {
+                    } catch (const exception::Base &e) {
                         throw;
                     } catch (const std::exception &e) {
                         KAI_THROW_1(Base, e.what());
@@ -674,7 +674,7 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                     Base,
                     (String("Unsupported operation in PerformBinaryOp: ") +
                      String(Operation::ToString(op)))
-                        .c_str());
+                        .CStr());
         }
 
         // If we reach here, no typed branch matched for this operation.
@@ -685,15 +685,15 @@ Object Executor::PerformBinaryOp(Object const &A, Object const &B,
                  A.GetClass()->GetName().ToString() + " and " +
                  B.GetClass()->GetName().ToString() + " for operation " +
                  Operation::ToString(op))
-                    .c_str());
+                    .CStr());
         } else {
             KAI_THROW_1(
                 Base,
                 (String("Invalid objects for operation: ") +
                  String(Operation::ToString(op)))
-                    .c_str());
+                    .CStr());
         }
-    } catch (const Exception::Base &e) {
+    } catch (const exception::Base &e) {
         KAI_TRACE_ERROR() << "PerformBinaryOp: KAI exception: " << e.ToString();
         throw;
     } catch (const std::exception &e) {

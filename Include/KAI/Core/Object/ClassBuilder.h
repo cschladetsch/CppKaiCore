@@ -1,6 +1,8 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/SetGCFlagFwd.h>
+
+#include <utility>
 
 #include "KAI/Core/Object/Accessor.h"
 #include "KAI/Core/Object/Class.h"
@@ -18,66 +20,68 @@ void RegisterClass(Registry &, ClassBase const &, Object const &,
 template <class T>
 class ClassBuilder {
    public:
-    typedef Type::Traits<T> Traits;
-    Registry *registry;
-    Class<T> *klass;
-    Pathname path;
-    Object root;
+       using Traits = Type::Traits<T>;
+       Registry* registry;
+       Class<T>* klass;
+       Pathname path;
+       Object root;
 
-    struct MethodsCollector {
-        struct PropertiesCollector {
-            ClassBuilder<T> *builder;
+       struct MethodsCollector {
+           struct PropertiesCollector {
+               ClassBuilder<T>* builder;
 
-            PropertiesCollector &operator=(PropertiesCollector &);
+               PropertiesCollector& operator=(PropertiesCollector&);
 
-            template <class Property>
-            PropertiesCollector &operator()(
-                const char *N, Property P, String const &D = "",
-                MemberCreateParams::Enum create_params =
-                    MemberCreateParams::Default) {
-                auto label = Label(N);
-                auto Q = MakeProperty<T>(P, label, create_params);
-                if (!D.empty()) Q->Description = D;
-                builder->klass->AddProperty(label, Q.release());
-                return *this;
-            }
-        };
+               template <class Property>
+               PropertiesCollector& operator()(const char* n, Property p, String const& d = "",
+                                               member_create_params::Enum createParams = member_create_params::Default)
+               {
+                   auto label = Label(n);
+                   auto q = MakeProperty<T>(p, label, createParams);
+                   if (!d.Empty()) {
+                       q->description = d;
+                   }
+                   builder->klass->AddProperty(label, q.release());
+                   return *this;
+               }
+           };
 
-        ClassBuilder<T> *builder;
-        PropertiesCollector Properties;
+           ClassBuilder<T>* builder;
+           PropertiesCollector properties;
 
-        MethodsCollector &operator=(MethodsCollector &);
+           MethodsCollector& operator=(MethodsCollector&);
 
-        template <class Method>
-        MethodsCollector &operator()(const char *name, Method method,
-                                     String const &D = "") {
-            auto label = Label(name);
-            auto M = MakeMethod(method, label);
-            if (!D.empty()) M->Description = D;
-            builder->klass->AddMethod(label, M.release());
-            return *this;
-        }
+           template <class Method> MethodsCollector& operator()(const char* name, Method method, String const& d = "")
+           {
+               auto label = Label(name);
+               auto m = MakeMethod(method, label);
+               if (!d.Empty()) {
+                   m->description = d;
+               }
+               builder->klass->AddMethod(label, m.release());
+               return *this;
+           }
     };
 
-    MethodsCollector Methods;
+    MethodsCollector methods;
 
-    ClassBuilder(Registry &R, const char *N)
-        : registry(&R), klass(new Class<T>(Label(N))) {
-        Methods.builder = this;
-        Methods.Properties.builder = this;
+    ClassBuilder(Registry& r, const char* n) : registry(&r), klass(new Class<T>(Label(n)))
+    {
+        methods.builder = this;
+        methods.properties.builder = this;
     }
 
-    ClassBuilder(Registry &R, Label const &N)
-        : registry(&R), klass(new Class<T>(N)) {
-        Methods.builder = this;
-        Methods.Properties.builder = this;
+    ClassBuilder(Registry& r, Label const& n) : registry(&r), klass(new Class<T>(n))
+    {
+        methods.builder = this;
+        methods.properties.builder = this;
     }
 
-    ClassBuilder(Registry &R, const Label &N, Object const &Q,
-                 const Pathname &P)
-        : registry(&R), root(Q), path(P), klass(new Class<T>(N)) {
-        Methods.builder = this;
-        Methods.Properties.builder = this;
+    ClassBuilder(Registry& r, const Label& n, Object const& q, Pathname p)
+        : registry(&r), root(q), path(std::move(p)), klass(new Class<T>(n))
+    {
+        methods.builder = this;
+        methods.properties.builder = this;
     }
 
     ~ClassBuilder() { RegisterClass(*registry, *klass, root, path); }

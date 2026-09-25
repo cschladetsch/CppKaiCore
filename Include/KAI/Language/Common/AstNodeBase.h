@@ -16,35 +16,53 @@ KAI_BEGIN
 template <class EToken, class AstEnumType>
 class AstNodeBase {
    public:
-    typedef EToken Token;
-    typedef AstNodeBase<Token, AstEnumType> AstNode;
-    typedef std::shared_ptr<AstNode> AstNodePtr;
-    typedef typename AstEnumType::Enum Enum;
-    typedef AstNodeBase<Token, AstEnumType> Self;
-    typedef std::shared_ptr<Self> Child;
-    typedef std::vector<Child> ChildrenType;
+       using Token = EToken;
+       using AstNode = AstNodeBase<Token, AstEnumType>;
+       using AstNodePtr = std::shared_ptr<AstNode>;
+       using Enum = typename AstEnumType::Enum;
+       using Self = AstNodeBase<Token, AstEnumType>;
+       using Child = std::shared_ptr<Self>;
+       using ChildrenType = std::vector<Child>;
 
-    AstNodeBase() : astType_((Enum)0) {}
-    AstNodeBase(Enum e) : astType_(e) {}
-    AstNodeBase(Enum e, Token t) : astType_(e), token_(t) {}
-    AstNodeBase(Token const &t) : astType_(AstEnumType::TokenType), token_(t) {}
+       AstNodeBase() : astType_((Enum) 0) {}
+       AstNodeBase(Enum e) : astType_(e) {}
+       AstNodeBase(Enum e, Token t) : astType_(e), token_(t) {}
+       AstNodeBase(Token const& t) : astType_(AstEnumType::TokenType), token_(t) {}
 
-    const Child &GetChild(size_t n) const { return GetChildren()[n]; }
-    const ChildrenType &GetChildren() const { return children_; }
-    Enum GetType() const { return astType_; }
+       [[nodiscard]] const Child& GetChild(size_t n) const
+       {
+           return GetChildren()[n];
+       }
+       [[nodiscard]] const ChildrenType& GetChildren() const
+       {
+           return children_;
+       }
+       [[nodiscard]] Enum GetType() const
+       {
+           return astType_;
+       }
 
-    const Token &GetToken() const { return token_; }
-    std::string GetTokenText() const { return token_.Text(); }
+       [[nodiscard]] const Token& GetToken() const
+       {
+           return token_;
+       }
+       [[nodiscard]] std::string GetTokenText() const
+       {
+           return token_.Text();
+       }
 
-    std::string ToString() const {
-        std::stringstream out;
-        out << AstEnumType::ToString(astType_) << ": " << token_.ToString()
-            << std::ends;
-        // out << token_.ToString() << std::ends;
-        return out.str();
-    }
+       [[nodiscard]] std::string ToString() const
+       {
+           std::stringstream out;
+           out << AstEnumType::ToString(astType_) << ": " << token_.ToString() << std::ends;
+           // out << token_.ToString() << std::ends;
+           return out.str();
+       }
 
-    std::string Text() const { return token_.Text(); }
+       [[nodiscard]] std::string Text() const
+       {
+           return token_.Text();
+       }
 
     bool Add(AstNodePtr node) {
         if (!node) {
@@ -68,7 +86,10 @@ class AstNodeBase {
         return out << node.ToString();
     }
 
-    size_t NumChildren() const { return children_.size(); }
+    [[nodiscard]] size_t NumChildren() const
+    {
+        return children_.size();
+    }
 
    protected:
     Enum astType_;

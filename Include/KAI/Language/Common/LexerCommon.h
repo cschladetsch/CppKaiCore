@@ -17,17 +17,17 @@ KAI_BEGIN
 template <class EnumType>
 class LexerCommon : public LexerBase {
    public:
-    typedef typename EnumType::Type Token;
-    typedef typename EnumType::Enum Enum;
-    typedef EnumType TokenEnumType;
+       using Token = typename EnumType::Type;
+       using Enum = typename EnumType::Enum;
+       using TokenEnumType = EnumType;
 
 #ifdef KAI_USE_MONOTONIC_ALLOCATOR
     typedef boost::monotonic::vector<Token> Tokens;
     typedef boost::monotonic::vector<std::string> Lines;
     typedef boost::monotonic::map<std::string, Token::Type> Keywords;
 #else
-    typedef std::vector<Token> Tokens;
-    typedef std::map<std::string, Enum> Keywords;
+       using Tokens = std::vector<Token>;
+       using Keywords = std::map<std::string, Enum>;
 #endif
 
     LexerCommon(const char *input, Registry &r) : LexerBase(input, r) {}
@@ -42,60 +42,69 @@ class LexerCommon : public LexerBase {
     virtual bool NextToken() = 0;
     virtual void Terminate() = 0;
 
-    const Tokens &GetTokens() const { return tokens; }
+    const Tokens &GetTokens() const {
+        return tokens_;
+    }
 
    protected:
-    Tokens tokens;
-    Keywords keyWords;
-    using LexerBase::reg_;
+       Tokens tokens_;
+       Keywords keyWords_;
+       using LexerBase::reg_;
 
-    bool Run() {
-        offset = 0;
-        lineNumber = 0;
+       bool Run()
+       {
+           offset_ = 0;
+           lineNumber_ = 0;
 
-        while (!Failed && NextToken());
+           while (!failed && NextToken()) {
+               ;
+           }
 
-        Terminate();
+           Terminate();
 
-        return !Failed;
-    }
+           return !failed;
+       }
 
     Token LexAlpha() {
         auto isIdentChar = [](int ch) -> int {
             return isalnum(ch) || ch == '_';
         };
 
-        Token tok(Enum::Ident, *this, lineNumber, Gather(isIdentChar));
-        auto kw = keyWords.find(tok.Text());
-        auto keyword = kw != keyWords.end();
-        if (keyword) tok.type = kw->second;
+        Token tok(Enum::Ident, *this, lineNumber_, Gather(isIdentChar));
+        auto kw = keyWords_.find(tok.Text());
+        auto keyword = kw != keyWords_.end();
+        if (keyword) {
+            tok.type = kw->second;
+        }
 
         return tok;
     }
 
     void AddStringToken(int lineNumber, Slice slice) override {
-        tokens.push_back(Token(Enum::String, *this, lineNumber, slice));
+        tokens_.push_back(Token(Enum::String, *this, lineNumber, slice));
     }
 
     void AddShellCommandToken(int lineNumber, Slice slice) override {
-        tokens.push_back(Token(Enum::ShellCommand, *this, lineNumber, slice));
+        tokens_.push_back(Token(Enum::ShellCommand, *this, lineNumber, slice));
     }
 
     void LexErrorBase(const char *msg) override { LexError(msg); }
 
     bool Add(Token const &tok) {
-        tokens.push_back(tok);
+        tokens_.push_back(tok);
         return true;
     }
 
     bool Add(Enum type, Slice slice) {
-        tokens.push_back(Token(type, *this, lineNumber, slice));
+        tokens_.push_back(Token(type, *this, lineNumber_, slice));
         return true;
     }
 
     bool Add(Enum type, int len = 1) {
-        Add(type, Slice(offset, offset + len));
-        while (len--) Next();
+        Add(type, Slice(offset_, offset_ + len));
+        while ((len--) != 0) {
+            Next();
+        }
 
         return true;
     }
@@ -125,15 +134,14 @@ class LexerCommon : public LexerBase {
     }
 
     bool LexError(const char *text) {
-        return Fail(CreateErrorMessage(Token(static_cast<Enum>(0), *this,
-                                             lineNumber, Slice(offset, offset)),
-                                       text, Current()));
+        return Fail(CreateErrorMessage(Token(static_cast<Enum>(0), *this, lineNumber_, Slice(offset_, offset_)), text,
+                                       Current()));
     }
 
    public:
     static std::string CreateErrorMessage(Token tok, const char *fmt, ...) {
         char buff0[4096];
-        va_list ap;
+        va_list ap = nullptr;
         va_start(ap, fmt);
 #ifdef WIN32
         vsprintf_s(buff0, sizeof(buff0), fmt, ap);
@@ -159,13 +167,14 @@ class LexerCommon : public LexerBase {
                            tok.lineNumber + afterContext);
 
         std::stringstream err;
-        err << buff << std::endl;
+        err << buff << '\n';
         for (int n = start; n <= end; ++n) {
             for (auto ch : lex.GetLine(n)) {
-                if (ch == '\t')
+                if (ch == '\t') {
                     err << "    ";
-                else
+                } else {
                     err << ch;
+                }
             }
 
             if (n == tok.lineNumber) {
@@ -176,13 +185,14 @@ class LexerCommon : public LexerBase {
                     }
 
                     auto c = lex.GetLine(tok.lineNumber)[ch];
-                    if (c == '\t')
+                    if (c == '\t') {
                         err << "    ";
-                    else
+                    } else {
                         err << ' ';
+                    }
                 }
 
-                err << std::endl;
+                err << '\n';
             }
         }
 
@@ -191,7 +201,7 @@ class LexerCommon : public LexerBase {
 
     std::string Print() const {
         std::stringstream str;
-        for (const auto &tok : tokens) {
+        for (const auto& tok : tokens_) {
             str << tok << ", ";
         }
         return str.str();

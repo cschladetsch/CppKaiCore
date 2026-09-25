@@ -8,36 +8,56 @@ KAI_BEGIN
 
 class Handle {
    public:
-    typedef int Value;
+       using Value = int;
 
    private:
-    Value value;
+       Value value_;
 
    public:
-    explicit Handle(Value V = 0) : value(V) {}
+       explicit Handle(Value v = 0) : value_(v) {}
 
-    Value GetValue() const { return value; }
-    Value NextValue() { return ++value; }
+       [[nodiscard]] Value GetValue() const
+       {
+           return value_;
+       }
+    Value NextValue() {
+        return ++value_;
+    }
 
-    friend bool operator<(Handle A, Handle B) { return A.value < B.value; }
-    friend bool operator==(Handle A, Handle B) { return A.value == B.value; }
-    friend bool operator!=(Handle A, Handle B) { return A.value != B.value; }
-    operator bool() const { return GetValue(); }
+    friend bool operator<(Handle a, Handle b)
+    {
+        return a.value_ < b.value_;
+    }
+    friend bool operator==(Handle a, Handle b)
+    {
+        return a.value_ == b.value_;
+    }
+    friend bool operator!=(Handle a, Handle b)
+    {
+        return a.value_ != b.value_;
+    }
+    operator bool() const {
+        return GetValue() != 0;
+    }
 
     static void Register(Registry &);
 };
 
 struct HashHandle {
-    enum { bucket_size = 8, min_buckets = 2048 };
-    std::size_t operator()(const Handle &A) const { return A.GetValue(); }
+    enum { BucketSize = 8, MinBuckets = 2048 };
+    std::size_t operator()(const Handle& a) const
+    {
+        return a.GetValue();
+    }
 
-    bool operator()(const Handle &A, const Handle &B) const {
-        return A.GetValue() < B.GetValue();
+    bool operator()(const Handle& a, const Handle& b) const
+    {
+        return a.GetValue() < b.GetValue();
     }
 };
 
 StringStream &operator<<(StringStream &, Handle);
 
-typedef std::unordered_set<Handle, HashHandle> HandleSet;
+using HandleSet = std::unordered_set<Handle, HashHandle>;
 
 KAI_END

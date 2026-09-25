@@ -8,17 +8,15 @@ KAI_BEGIN
 
 template <class T>
 struct DerefType {
-    typedef T Value;
-    typedef typename Type::Traits<T> Tr;
-    typedef typename Tr::Reference Reference;
-    typedef typename Tr::ConstReference ConstReference;
+    using Value = T;
+    using Tr = typename Type::Traits<T>;
+    using Reference = typename Tr::Reference;
+    using ConstReference = typename Tr::ConstReference;
 };
 
-template <class T>
-Storage<T> *Clone(StorageBase const &);
+template <class T> Storage<T>* Clone(StorageBase const& /*Q*/);
 
-template <class T>
-typename DerefType<T>::ConstReference ConstDeref(StorageBase const &);
+template <class T> DerefType<T>::ConstReference ConstDeref(StorageBase const& /*base*/);
 
 ::std::size_t GetHash(const ::kai::String &);
 

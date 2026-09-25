@@ -4,10 +4,10 @@
 
 KAI_BEGIN
 
-StringStream &operator<<(StringStream &S, int N);
-StringStream &operator>>(StringStream &S, int &N);
-BinaryStream &operator<<(BinaryStream &S, int N);
-BinaryStream &operator>>(BinaryStream &S, int &N);
+StringStream& operator<<(StringStream& s, int n);
+StringStream& operator>>(StringStream& s, int& n);
+BinaryStream& operator<<(BinaryStream& s, int n);
+BinaryStream& operator>>(BinaryStream& s, int& n);
 
 // inline HashValue GetHash(int N) { return N; }
 

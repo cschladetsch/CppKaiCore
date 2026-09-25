@@ -1,4 +1,4 @@
-#include <KAI/Core/BuiltinTypes.h>
+﻿#include <KAI/Core/BuiltinTypes.h>
 #include <KAI/Core/File.h>
 #include <KAI/Executor/Compiler.h>
 
@@ -14,7 +14,7 @@ bool Compiler::Destroy() {
     //
     // Again, all this work and text describing it is probably more cost than
     // just letting op's be managed from the start.
-    for (auto op : string_to_op) op.second.SetManaged(true);
+    for (auto op : stringToOp_) op.second.SetManaged(true);
 
     return true;
 }
@@ -34,15 +34,15 @@ Pointer<Continuation> Compiler::Translate(const String &text,
 
 void Compiler::AddOperation(int id, const String &name) {
     Operation type = Operation::Type(id);
-    Pointer<Operation> operation = Self->GetRegistry()->New(type);
+    Pointer<Operation> operation = self->GetRegistry()->New(type);
     operation.SetManaged(false);
-    string_to_op[name] = operation;
-    op_to_string[type] = name;
+    stringToOp_[name] = operation;
+    opToString_[type] = name;
 }
 
 Pointer<Continuation> Compiler::CompileFile(const String &fileName,
                                             Structure st) const {
-    auto text = File::ReadAllText(fileName.c_str());
+    auto text = File::ReadAllText(fileName.CStr());
     return Translate(text.c_str(), st);
 }
 

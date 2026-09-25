@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/BuiltinTypes/Stack.h>
 #include <KAI/Core/Object/Reflected.h>
@@ -16,36 +16,45 @@ KAI_TYPE_TRAITS(Executor, Number::Executor, Properties::Reflected);
 
 struct Executor : Reflected {
     Executor();
-    ~Executor();
+    ~Executor() override;
 
-    friend bool operator<(const Executor &A, const Executor &B);
-    friend bool operator==(const Executor &A, const Executor &B);
+    friend bool operator<(const Executor& a, const Executor& b);
+    friend bool operator==(const Executor& a, const Executor& b);
 
-    void Create();
-    bool Destroy();
+    void Create() override;
+    bool Destroy() override;
 
     void SetScope(Object);
     void PopScope();
-    Object GetScope() const;
+    [[nodiscard]] Object GetScope() const;
 
     void SetContinuation(Value<Continuation>);
     void Continue();
     void Continue(Value<Continuation>);
-    void ContinueOnly(Value<Continuation> C);
+    void ContinueOnly(Value<Continuation> c);
     void ContinueOneInstruction();
 
     void SetSingleStep(bool enable) { singleStep_ = enable; }
-    bool GetSingleStep() const { return singleStep_; }
-    
+    [[nodiscard]] bool GetSingleStep() const
+    {
+        return singleStep_;
+    }
+
     bool Step();
 
-    Object GetCompiler() const { return compiler_; }
-    void SetCompiler(Object c) { compiler_ = c; }
+    [[nodiscard]] Object GetCompiler() const
+    {
+        return compiler_;
+    }
+    void SetCompiler(const Object& c)
+    {
+        compiler_ = c;
+    }
 
-    void Eval(Object const &Q);
-    void Dump(Object const &Q);
+    void Eval(Object const& q);
+    void Dump(Object const& q);
 
-    std::string PrintStack() const;
+    [[nodiscard]] std::string PrintStack() const;
     void PrintStack(std::ostream &out) const;
     void Run();
 
@@ -54,33 +63,39 @@ struct Executor : Reflected {
         return Reg().New<T>();
     }
 
-    template <class T>
-    Value<T> New(T const &X) {
-        return Reg().New(X);
+    template <class T> Value<T> New(T const& x)
+    {
+        return Reg().New(x);
     }
 
-    void SetTree(Tree *T) { tree_ = T; }
-    Tree *GetTree() const { return tree_; }
+    void SetTree(Tree* t)
+    {
+        tree_ = t;
+    }
+    [[nodiscard]] Tree* GetTree() const
+    {
+        return tree_;
+    }
 
     void SetTraceLevel(int);
-    int GetTraceLevel() const;
+    [[nodiscard]] int GetTraceLevel() const;
 
     template <class T>
     void Push(const Value<T> &val) {
         Push(val.GetObject());
     }
 
-    template <class Ident>
-    void EvalIdent(Object const &Q) {
+    template <class Ident> void EvalIdent(Object const& q)
+    {
         try {
             // Validate the input object
-            if (!Q.Valid()) {
+            if (!q.Valid()) {
                 KAI_TRACE_ERROR() << "EvalIdent: Invalid object";
                 return;  // Return early instead of throwing
             }
 
             // Extract the identifier from the object
-            Ident const &ident = ConstDeref<Ident>(Q);
+            Ident const& ident = ConstDeref<Ident>(q);
             std::cerr << "[EI1] EvalIdent name=" << ident.ToString() << " quoted=" << ident.Quoted() << std::endl;
 
             // For quoted identifiers, just push the original object
@@ -89,14 +104,14 @@ struct Executor : Reflected {
                     KAI_TRACE() << "EvalIdent: Pushing quoted identifier: "
                                 << ident.ToString();
                 }
-                Push(Q);
+                Push(q);
                 return;
             }
 
             // Handle empty labels as a special case
             if constexpr (std::is_same_v<Ident, Label> ||
                           std::is_same_v<Ident, Pathname>) {
-                if (ident.ToString().empty()) {
+                if (ident.ToString().Empty()) {
                     KAI_TRACE() << "EvalIdent: Empty identifier name, creating "
                                    "placeholder";
                     // Push an empty object rather than throwing an exception
@@ -143,12 +158,12 @@ struct Executor : Reflected {
                     Push(Object());
                 }
             }
-        } catch (const Exception::Base &e) {
+        } catch (const exception::Base& e) {
             KAI_TRACE_ERROR() << "EvalIdent: KAI exception: " << e.ToString();
             // Instead of rethrowing, push an empty object to allow execution to
             // continue
             Push(Object());
-        } catch (const std::exception &e) {
+        } catch (const std::exception& e) {
             KAI_TRACE_ERROR() << "EvalIdent: std::exception: " << e.what();
             // Instead of rethrowing, push an empty object to allow execution to
             // continue
@@ -164,20 +179,21 @@ struct Executor : Reflected {
     void Push(Object const &);
     void Push(const std::pair<Object, Object> &);
     Object Pop();
-    Object Top() const;
+    [[nodiscard]] Object Top() const;
 
     Value<Stack> GetDataStack();
-    Value<const Stack> GetDataStack() const {
+    [[nodiscard]] Value<const Stack> GetDataStack() const
+    {
         if (!data_.Valid() || !data_.Exists()) {
             KAI_TRACE_ERROR() << "GetDataStack: Invalid data stack";
-            return Value<const Stack>();
+            return {};
         }
         return Value<const Stack>(data_.GetConstObject());
     }
 
     void SetDataStack(Value<Stack> stack) { data_ = stack; }
 
-    Value<Stack> GetContextStack() const;
+    [[nodiscard]] Value<Stack> GetContextStack() const;
 
     void ClearStacks() {
         data_->Clear();
@@ -188,12 +204,12 @@ struct Executor : Reflected {
     void ClearContext();
     void DropN();
     void ContinuePi();
-    void EvalContinuation(Object const &Q);
+    void EvalContinuation(Object const& q);
     bool IsBinaryOp(Operation::Type op);
-    Object PerformBinaryOp(Object const &A, Object const &B, Operation::Type op);
-    Object Resolve(Object, bool ignoreQuote = false) const;
-    Object Resolve(const Label &) const;
-    Object Resolve(const Pathname &) const;
+    Object PerformBinaryOp(Object const& a, Object const& b, Operation::Type op);
+    [[nodiscard]] Object Resolve(Object, bool ignoreQuote = false) const;
+    [[nodiscard]] Object Resolve(const Label&) const;
+    [[nodiscard]] Object Resolve(const Pathname&) const;
     Object TryResolveOrCreate(Label const &label, Type::Number type = Type::Number::None);
     Object ExtractValueFromContinuation(Object const &value);
     Object UnwrapValue(const Object &value);
@@ -212,7 +228,7 @@ protected:
     void MarkAndSweep();
     void MarkAndSweep(Object &root);
 
-    void Push(Stack &L, Object const &Q);
+    void Push(Stack& l, Object const& q);
     Object Pop(Stack &stack);
     void NextContinuation();
 
@@ -230,15 +246,14 @@ private:
     void Trace(const Label &, const StorageBase &, StringStream &);
     void Trace(const Object &, StringStream &);
     void ConditionalContextSwitch(Operation::Type);
-    Pointer<Continuation> NewContinuation(Value<Continuation> P);
+    Pointer<Continuation> NewContinuation(Value<Continuation> p);
     void ExecuteContinuationInline(Pointer<Continuation> cont);
     void ExecuteContinuationInlineAndDrain(Pointer<Continuation> cont);
 
-    Object TryResolve(Object const &) const;
-    Object TryResolve(Label const &label) const;
-    Object TryResolve(Pathname const &label) const;
+    [[nodiscard]] Object TryResolve(Object const&) const;
+    [[nodiscard]] Object TryResolve(Label const& label) const;
+    [[nodiscard]] Object TryResolve(Pathname const& label) const;
 
-private:
     Value<Continuation> continuation_;
     Value<Stack> context_;
     Value<Stack> data_;

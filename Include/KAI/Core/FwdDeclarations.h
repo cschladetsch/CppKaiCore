@@ -25,7 +25,7 @@ struct FwdBasePointer {};
 
 const char *ToLower(const char *str);
 
-typedef ::std::size_t HashValue;
+using HashValue = ::std::size_t;
 
 KAI_END
 

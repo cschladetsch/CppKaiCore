@@ -33,9 +33,9 @@ class ConsoleColor {
         Blue,
     };
 
-    std::string GetConsoleColor(EType type) const;
+    [[nodiscard]] std::string GetConsoleColor(EType type) const;
 };
 
-std::ostream& operator<<(std::ostream& S, ConsoleColor::EType C);
+std::ostream& operator<<(std::ostream& s, ConsoleColor::EType c);
 
 KAI_END

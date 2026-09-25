@@ -1,4 +1,4 @@
-#include "KAI/Core/StringStream.h"
+﻿#include "KAI/Core/StringStream.h"
 
 #include <iostream>
 
@@ -26,7 +26,7 @@ void StringStream::Register(Registry &registry) {
 }
 
 bool StringStream::CanRead(int N) const {
-    return read_offset + N < (int)stream.size();
+    return readOffset_ + N < (int)stream_.size();
 }
 
 StringStream &operator<<(StringStream &S, const BinaryPacket &T) {
@@ -51,35 +51,35 @@ StringStream &operator<<(StringStream &S, const BasePointer<FunctionBase> &F) {
 }
 
 String StringStream::ToString() const {
-    return String(stream.begin(), stream.end());
+    return String(stream_.begin(), stream_.end());
 }
 
-void StringStream::Append(Char C) { stream.push_back(C); }
+void StringStream::Append(Char C) { stream_.push_back(C); }
 
 void StringStream::Append(std::string_view sv) {
-    std::copy(sv.begin(), sv.end(), std::back_inserter(stream));
+    std::copy(sv.begin(), sv.end(), std::back_inserter(stream_));
 }
 
 void StringStream::Append(std::string_view A, std::string_view B) {
-    std::copy(A.begin(), A.end(), std::back_inserter(stream));
-    std::copy(B.begin(), B.end(), std::back_inserter(stream));
+    std::copy(A.begin(), A.end(), std::back_inserter(stream_));
+    std::copy(B.begin(), B.end(), std::back_inserter(stream_));
 }
 
 void StringStream::Append(const String &S) {
-    if (!S.empty()) Append(std::string_view(S.c_str(), S.size()));
+    if (!S.Empty()) Append(std::string_view(S.CStr(), S.Size()));
 }
 
 bool StringStream::Extract(int, String &) { KAI_NOT_IMPLEMENTED(); }
 
 char StringStream::Peek() const {
     if (!CanRead(1)) return 0;
-    return stream[read_offset];
+    return stream_[readOffset_];
 }
 
 bool StringStream::Extract(Char &C) {
-    if (read_offset > (int)stream.size() - 1) return false;
+    if (readOffset_ > (int)stream_.size() - 1) return false;
 
-    C = stream[read_offset++];
+    C = stream_[readOffset_++];
     return true;
 }
 
@@ -95,21 +95,21 @@ StringStream &operator<<(StringStream &S, const String::Char C) {
     return S;
 }
 
-StringStream &operator<<(StringStream &stream, const Object &object) {
-    if (!object.Exists()) return stream << "Null";
+StringStream &operator<<(StringStream &stream_, const Object &object) {
+    if (!object.Exists()) return stream_ << "Null";
 
     const ClassBase *klass = object.GetClass();
-    if (klass == 0) return stream << "Classless";
+    if (klass == 0) return stream_ << "Classless";
 
     if (klass->HasOperation(Type::Properties::StringStreamInsert))
-        klass->Insert(stream, object.GetStorageBase());
+        klass->Insert(stream_, object.GetStorageBase());
     else {
         // Removed Operation special case to avoid Core->Executor dependency
-        stream << "Handle=" << object.GetHandle().GetValue()
+        stream_ << "Handle=" << object.GetHandle().GetValue()
                << ", type=" << klass->GetName() << " ";
     }
 
-    return stream;
+    return stream_;
 }
 
 StringStream &operator<<(StringStream &S, const ClassBase *C) {
@@ -131,7 +131,7 @@ void Ends(EndsArgument) {
 }
 
 std::ostream &operator<<(std::ostream &out, const StringStream &ss) {
-    return out << ss.ToString().c_str();
+    return out << ss.ToString().StdString();
 }
 
 std::istream &operator>>(std::istream &in, StringStream &ss) {

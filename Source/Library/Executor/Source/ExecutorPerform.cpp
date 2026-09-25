@@ -1,4 +1,4 @@
-#include <KAI/Core/BuiltinTypes.h>
+﻿#include <KAI/Core/BuiltinTypes.h>
 #include <KAI/Core/Exception.h>
 #include <KAI/Core/Tree.h>
 #include <KAI/Executor/BinBase.h>
@@ -389,7 +389,7 @@ case Operation::Suspend: {
             // This is critical for function arguments to be available in the
             // scope
             if (continuation_.Exists()) {
-                continuation_->InitialStackDepth = data_->Size();
+                continuation_->initialStackDepth = data_->Size();
                 // Create a fresh scope per invocation so parameters/locals
                 // don't clobber caller scope (dynamic scoping via context stack).
                 continuation_->SetScope(New<void>());
@@ -441,7 +441,7 @@ case Operation::Suspend: {
             }
 
             if (continuation_.Exists()) {
-                continuation_->InitialStackDepth = data_->Size();
+                continuation_->initialStackDepth = data_->Size();
                 continuation_->Enter(this);
             }
 
@@ -540,7 +540,7 @@ case Operation::Suspend: {
 
                 int idx = ConstDeref<int>(key);
                 String str = ConstDeref<String>(container);
-                if (idx < 0 || idx >= static_cast<int>(str.size())) {
+                if (idx < 0 || idx >= static_cast<int>(str.Size())) {
                     KAI_TRACE_ERROR()
                         << "GetChild: String index out of bounds: " << idx;
                     Push(Object());
@@ -552,7 +552,7 @@ case Operation::Suspend: {
             else {
                 Label label;
                 if (key.IsType<String>()) {
-                    label = Label(ConstDeref<String>(key).c_str());
+                    label = Label(ConstDeref<String>(key).CStr());
                 } else if (key.IsType<int>()) {
                     label = Label(std::to_string(ConstDeref<int>(key)).c_str());
                 }
@@ -655,7 +655,7 @@ case Operation::Suspend: {
                     String pathStr = path.ToString();
                     if (pathStr.Size() > 0 && pathStr[0] == '\'') {
                         // Create a new string without the first character
-                        pathStr = String(pathStr.begin() + 1, pathStr.end());
+                        pathStr = String(pathStr.Begin() + 1, pathStr.End());
                     }
                     scope.Set(Label(pathStr), value);
                     KAI_TRACE() << "Re-bound '" << pathStr << "' in scope";
@@ -664,7 +664,7 @@ case Operation::Suspend: {
                     String pathStr = path.ToString();
                     if (pathStr.Size() > 0 && pathStr[0] == '\'') {
                         // Create a new string without the first character
-                        pathStr = String(pathStr.begin() + 1, pathStr.end());
+                        pathStr = String(pathStr.Begin() + 1, pathStr.End());
                     }
                     scope.Add(Label(pathStr), value);
                     KAI_TRACE()
@@ -787,7 +787,7 @@ case Operation::Suspend: {
                 // Strip the quote if present to get the actual name
                 String pathStr = path.ToString();
                 if (pathStr.Size() > 0 && pathStr[0] == '\'') {
-                    pathStr = String(pathStr.begin() + 1, pathStr.end());
+                    pathStr = String(pathStr.Begin() + 1, pathStr.End());
                 }
                 storeLabel(Label(pathStr));
             } else {
@@ -1071,13 +1071,13 @@ case Operation::Suspend: {
 
                 // Push the selected continuation onto the context stack and
                 // break to force execution to switch to it
-                newCont->InitialStackDepth = data_->Size();
+                newCont->initialStackDepth = data_->Size();
                 context_->Push(newCont);
                 break_ = true;
 
                 KAI_TRACE() << "IfThenSuspendElseSuspend: Successfully set up "
                                "branch execution";
-            } catch (const Exception::Base& e) {
+            } catch (const exception::Base& e) {
                 KAI_TRACE_ERROR() << "IfThenSuspendElseSuspend: KAI exception: "
                                   << e.ToString();
                 throw e;
@@ -1196,7 +1196,7 @@ case Operation::Suspend: {
                 condition = ConstDeref<float>(value) != 0.0f;
             } else if (value.IsType<String>()) {
                 // Consider empty string as false, non-empty as true
-                condition = !ConstDeref<String>(value).empty();
+                condition = !ConstDeref<String>(value).Empty();
             } else {
                 // For object types, consider existence/validity as the
                 // condition
@@ -1222,7 +1222,7 @@ case Operation::Suspend: {
             } else if (obj.IsType<Map>()) {
                 Push(New<int>(Deref<Map>(obj).Size()));
             } else if (obj.IsType<String>()) {
-                Push(New<int>(Deref<String>(obj).size()));
+                Push(New<int>(Deref<String>(obj).Size()));
             } else {
                 KAI_THROW_1(Base, "Size operation called on unsupported type");
             }
@@ -1310,10 +1310,10 @@ case Operation::Suspend: {
                 Push(result);
             } else if (container.IsType<String>()) {
                 String src = ConstDeref<String>(container);
-                int size = static_cast<int>(src.size());
+                int size = static_cast<int>(src.Size());
                 start = std::max(0, std::min(start, size));
                 end = std::max(0, std::min(end, size));
-                Push(New<String>(String(src.begin() + start, src.begin() + end)));
+                Push(New<String>(String(src.Begin() + start, src.Begin() + end)));
             } else {
                 KAI_TRACE_ERROR() << "ArraySlice: Unsupported container type";
                 Push(Object());
@@ -1492,7 +1492,7 @@ case Operation::Suspend: {
                     }
                     // If continue_ is set, it just goes to next iteration
                 }
-            } catch (const Exception::Base& e) {
+            } catch (const exception::Base& e) {
                 KAI_TRACE_ERROR()
                     << "WhileLoop: KAI exception: " << e.ToString();
                 throw e;
@@ -1682,7 +1682,7 @@ case Operation::Suspend: {
                         ExecuteContinuationInlineAndDrain(incrCont);
                     }
                 }
-            } catch (const Exception::Base& e) {
+            } catch (const exception::Base& e) {
                 KAI_TRACE_ERROR() << "ForLoop: " << e.ToString();
                 throw e;
             } catch (const std::exception& e) {
@@ -1750,7 +1750,7 @@ case Operation::Suspend: {
 
                     // Check condition result
                 } while (!data_->Empty() && PopBool());
-            } catch (const Exception::Base& e) {
+            } catch (const exception::Base& e) {
                 KAI_TRACE_ERROR() << "DoLoop: KAI exception: " << e.ToString();
                 throw e;
             } catch (const std::exception& e) {
@@ -1872,7 +1872,7 @@ case Operation::Suspend: {
                     KAI_TRACE_ERROR()
                         << "Jump: Jump target is not a continuation";
                 }
-            } catch (const Exception::Base& e) {
+            } catch (const exception::Base& e) {
                 KAI_TRACE_ERROR() << "Jump: KAI exception: " << e.ToString();
                 throw e;
             } catch (const std::exception& e) {
@@ -2017,7 +2017,7 @@ case Operation::Suspend: {
                     KAI_TRACE_ERROR()
                         << "IfFalseJump: Jump target is not a continuation";
                 }
-            } catch (const Exception::Base& e) {
+            } catch (const exception::Base& e) {
                 KAI_TRACE_ERROR()
                     << "IfFalseJump: KAI exception: " << e.ToString();
                 throw e;
@@ -2085,7 +2085,7 @@ case Operation::Suspend: {
                     String pathStr = ConstDeref<Pathname>(index).ToString();
                     // Remove the leading quote if present
                     if (pathStr.StartsWith("'")) {
-                        pathStr = String(pathStr.c_str() + 1);
+                        pathStr = String(pathStr.CStr() + 1);
                     }
                     searchKey = New<String>(pathStr);
                 }
@@ -2109,7 +2109,7 @@ case Operation::Suspend: {
 
                 int idx = ConstDeref<int>(index);
                 String str = ConstDeref<String>(container);
-                if (idx < 0 || idx >= static_cast<int>(str.size())) {
+                if (idx < 0 || idx >= static_cast<int>(str.Size())) {
                     KAI_TRACE_ERROR()
                         << "Index: String index out of bounds: " << idx;
                     Push(Object());
@@ -2173,7 +2173,7 @@ case Operation::Suspend: {
                     String pathStr = ConstDeref<Pathname>(index).ToString();
                     // Remove the leading quote if present
                     if (pathStr.StartsWith("'")) {
-                        pathStr = String(pathStr.c_str() + 1);
+                        pathStr = String(pathStr.CStr() + 1);
                     }
                     mapKey = New<String>(pathStr);
                 }
@@ -2325,7 +2325,7 @@ case Operation::Suspend: {
 
                     try {
                         ExecuteContinuationInlineAndDrain(cont);
-                    } catch (const Exception::Base& e) {
+                    } catch (const exception::Base& e) {
                         KAI_TRACE_ERROR() << "ForEach: KAI exception in iteration " << i
                                           << ": " << e.ToString();
                         // Don't re-throw - continue to check break/continue flags
@@ -2388,7 +2388,7 @@ case Operation::Suspend: {
 
                     try {
                         ExecuteContinuationInlineAndDrain(cont);
-                    } catch (const Exception::Base& e) {
+                    } catch (const exception::Base& e) {
                         KAI_TRACE_ERROR() << "ForEach: KAI exception in iteration " << idx
                                           << ": " << e.ToString();
                     } catch (const std::exception& e) {
@@ -2417,7 +2417,7 @@ case Operation::Suspend: {
                 }
             } else if (collection.IsType<String>()) {
                 auto& str = Deref<String>(collection);
-                KAI_TRACE() << "ForEach: Processing string with " << str.size()
+                KAI_TRACE() << "ForEach: Processing string with " << str.Size()
                             << " characters";
 
                 for (char ch : str) {

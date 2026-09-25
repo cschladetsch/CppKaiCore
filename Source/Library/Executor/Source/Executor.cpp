@@ -1,4 +1,4 @@
-#include <cctype>
+﻿#include <cctype>
 #include <cstdio>
 #include <iostream>
 #include <sstream>
@@ -145,7 +145,7 @@ bool Executor::PopBool() {
         if (val.IsType<String>()) {
             // Common convention: empty string is false, any other string is
             // true
-            return !ConstDeref<String>(val).empty();
+            return !ConstDeref<String>(val).Empty();
         }
 
         // Special case for continuations
@@ -184,7 +184,7 @@ bool Executor::PopBool() {
             // KAI_TRACE() << "PopBool: Converting unknown type to bool (true)";
         }
         return true;
-    } catch (const Exception::Base &e) {
+    } catch (const exception::Base &e) {
         KAI_TRACE_ERROR() << "PopBool: Caught KAI exception: " << e.ToString();
         return false;
     } catch (const std::exception &e) {
@@ -327,7 +327,7 @@ Object Executor::TryResolve(Object const &Q) const {
 Object Executor::TryResolve(Label const &label) const {
     std::cerr << "[TR0] TryResolve(Label) called for: " << label.ToString() << std::endl;
     // Handle empty label case
-    if (label.ToString().empty()) {
+    if (label.ToString().Empty()) {
         // KAI_TRACE() << "TryResolve: Empty label";
         return Object();
     }
@@ -382,7 +382,7 @@ Object Executor::TryResolve(Label const &label) const {
 // where missing objects cause ObjectNotFound exceptions.
 Object Executor::TryResolveOrCreate(Label const &label, Type::Number type) {
     // Handle empty label case
-    if (label.ToString().empty()) {
+    if (label.ToString().Empty()) {
         // KAI_TRACE() << "TryResolveOrCreate: Empty label, creating empty
         // object";
         return Object();  // Return empty object
@@ -459,7 +459,7 @@ Object Executor::TryResolve(Pathname const &path) const {
     // For simple pathnames (no dots), convert to Label for lookup
     String pathStr = path.ToString();
     if (path.Quoted() && pathStr.Size() > 0 && pathStr[0] == '\'') {
-        pathStr = String(pathStr.begin() + 1, pathStr.end());
+        pathStr = String(pathStr.Begin() + 1, pathStr.End());
     }
     if (!pathStr.Contains(".")) {
         // Simple identifier - resolve as Label
@@ -525,7 +525,7 @@ void Executor::Eval(Object const &Q) {
                 const auto op = Deref<Operation>(Q).GetTypeNumber();
                 std::cerr << "[Eval-Op] got op=" << static_cast<int>(op) << std::endl;
                 Perform(op);
-            } catch (const Exception::Base &e) {
+            } catch (const exception::Base &e) {
                 // Re-throw KAI exceptions (like assertion failures) so they can
                 // be handled by the caller
                 std::cerr << "[Eval-Op] KAI exception caught: " << e.ToString() << std::endl;
@@ -662,7 +662,7 @@ void Executor::ContinueOneInstruction() {
             return;
         }
         
-    } catch (const Exception::Base &e) {
+    } catch (const exception::Base &e) {
         KAI_TRACE_ERROR() << "Continue: KAI Exception: " << e.ToString();
         break_ = true;
         throw;
@@ -729,7 +729,7 @@ void Executor::ContinueOneInstruction() {
             return;
         }
         
-    } catch (const Exception::Base &e) {
+    } catch (const exception::Base &e) {
         KAI_TRACE_ERROR() << "Continue: KAI Exception: " << e.ToString();
         break_ = true;
         throw;
@@ -888,8 +888,8 @@ Pointer<Continuation> Executor::NewContinuation(Value<Continuation> orig) {
 
     // Check if we have a valid registry
     Registry *registry = nullptr;
-    if (Self && Self->GetRegistry()) {
-        registry = Self->GetRegistry();
+    if (self && self->GetRegistry()) {
+        registry = self->GetRegistry();
     } else {
         KAI_TRACE_ERROR() << "NewContinuation: No valid registry available";
         return Pointer<Continuation>();  // Return empty continuation
@@ -956,7 +956,7 @@ void Executor::ConditionalContextSwitch(Operation::Type op) {
             context_->Push(continuation_);
             continuation_ = NewContinuation(obj);
             if (continuation_.Exists()) {
-                continuation_->InitialStackDepth = data_->Size();
+                continuation_->initialStackDepth = data_->Size();
                 continuation_->Enter(this);
             }
             break_ = true;
@@ -988,7 +988,7 @@ void Executor::ConditionalContextSwitch(Operation::Type op) {
                 continuation_ = NewContinuation(obj);
             }
             if (continuation_.Exists()) {
-                continuation_->InitialStackDepth = data_->Size();
+                continuation_->initialStackDepth = data_->Size();
             }
             break_ = true;
             break;

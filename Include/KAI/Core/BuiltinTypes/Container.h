@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/Object/Object.h>
 #include <KAI/Core/Object/ObjectConstructParams.h>
@@ -7,47 +7,67 @@
 
 KAI_BEGIN
 
-template <class T>
-struct Container : Reflected {
-    bool Attach(Object const &Q) {
-        if (!Self) {
+template <class T> struct Container : Reflected {
+protected:
+    Container() = default;
+
+public:
+    bool Attach(Object const& q)
+    {
+        if (self == nullptr) {
             // it is wrong to try to attach to a null container
             KAI_THROW_0(NullObject);
         }
-        if (!Q.Exists()) {
+        if (!q.Exists()) {
             // it is wrong to try to attach a null object to a container
             KAI_THROW_0(NullObject);
         }
 
-        if (Q.IsMarked()) return false;
+        if (q.IsMarked()) {
+            return false;
+        }
 
-        Q.AddedToContainer(*Self);
+        q.AddedToContainer(*self);
         return true;
     }
-    void Detach(Object const &Q) {
-        if (!Self || !Q.Exists()) return;
+    void Detach(Object const& q)
+    {
+        if ((self == nullptr) || !q.Exists()) {
+            return;
+        }
 
-        Q.RemovedFromContainer(*Self);
+        q.RemovedFromContainer(*self);
     }
+    friend T;
 };
 
 template <class T>
 class ConstStorage<Container<T> > : public StorageBase  //, IConstStorage<T>
 {
-    typedef typename Type::Traits<T> Tr;
-    typedef typename Tr::Store Stored;
+    using Tr = typename Type::Traits<T>;
+    using Stored = typename Tr::Store;
 
-   protected:
-    Stored stored;
+protected:
+    Stored stored_;
 
-   public:
-    ConstStorage(const ObjectConstructParams &P) : StorageBase(P) {
+public:
+    ConstStorage(const ObjectConstructParams& p) : StorageBase(p)
+    {
         SetClean();
     }
 
-    typename Tr::ConstReference GetConstReference() const { return stored; }
-    typename Tr::ConstReference operator*() const { return stored; }
-    typename Tr::ConstPointer operator->() const { return &stored; }
+    Tr::ConstReference GetConstReference() const
+    {
+        return stored_;
+    }
+    Tr::ConstReference operator*() const
+    {
+        return stored_;
+    }
+    Tr::ConstPointer operator->() const
+    {
+        return &stored_;
+    }
 };
 
 KAI_END

@@ -1,4 +1,6 @@
-#pragma once
+﻿#pragma once
+
+#include <utility>
 
 #include "KAI/Core/Argument.h"
 #include "KAI/Core/Base.h"
@@ -9,8 +11,8 @@
 
 KAI_BEGIN
 
-StringStream &operator<<(StringStream &S, const Structure &T);
-StringStream &operator>>(StringStream &S, Structure &T);
+StringStream& operator<<(StringStream& s, const Structure& t);
+StringStream& operator>>(StringStream& s, Structure& t);
 
 namespace debug {
 struct Trace : StringStream {
@@ -22,36 +24,35 @@ struct Trace : StringStream {
     };
 
     // show the location of the trace, including line number
-    static bool TraceFileLocation;
+    static bool traceFileLocation;
 
     // only show basename of location of trace
-    static bool StripPath;
+    static bool stripPath;
 
     // trace the function name_ as well
-    static bool TraceFunction;
+    static bool traceFunction;
 
     // directory where log files will be stored
-    static std::string LogDirectory;
+    static std::string logDirectory;
 
     Type type;
-    FileLocation file_location;
-    Trace(FileLocation const &F, Type T = Information)
-        : type(T), file_location(F) {}
+    FileLocation fileLocation;
+    Trace(FileLocation f, Type t = Information) : type(t), fileLocation(std::move(f)) {}
     ~Trace();
 
-    template <class T>
-    StringStream &operator<<(const T &X) {
-        static_cast<StringStream &>(*this) << X;
+    template <class T> StringStream& operator<<(const T& x)
+    {
+        static_cast<StringStream&>(*this) << x;
         return *this;
     }
 
-    StringStream &operator<<(const Object &X);
+    StringStream& operator<<(const Object& x);
 
-    template <class T>
-    Trace &Write(const char *P, T const &X) {
+    template <class T> Trace& Write(const char* p, T const& x)
+    {
         // TODO: *this << rang::fg::green << P << "='" << rang::fg::yellow << X
         // << rang::fg::gray << "' " << rang::style::reset;
-        *this << P << "='" << X << "' ";
+        *this << p << "='" << x << "' ";
         return *this;
     }
 };
@@ -60,10 +61,10 @@ void MaxTrace();
 void MinTrace();
 
 struct EmptySink {
-    EmptySink() {}
+    EmptySink() = default;
 
-    template <class T>
-    EmptySink &operator<<(const T &) {
+    template <class T> EmptySink& operator<<(const T& /*unused*/)
+    {
         return *this;
     }
 };

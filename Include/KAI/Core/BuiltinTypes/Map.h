@@ -11,10 +11,10 @@
 KAI_BEGIN
 
 struct MapCompare {
-    bool operator()(const Object &A, const Object &B) const;
+    bool operator()(const Object& a, const Object& b) const;
 };
 
-typedef MapBase<std::map<Object, Object, MapCompare> > Map;
+using Map = MapBase<std::map<Object, Object, MapCompare>>;
 
 KAI_TYPE_TRAITS(Map, Number::Map,
                 Properties::StringStreamInsert  // TODO: StringStreaming

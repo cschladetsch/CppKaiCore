@@ -1,4 +1,4 @@
-
+﻿
 #include <KAI/Core/Object/ClassBuilder.h>
 
 #include "KAI/Core/BuiltinTypes.h"
@@ -9,9 +9,9 @@ void ObjectSet::Register(Registry &R) {
     ClassBuilder<ObjectSet>(R, Label("Set"));
 }
 
-bool ObjectSet::Empty() const { return objects.empty(); }
+bool ObjectSet::Empty() const { return objects_.empty(); }
 
-int ObjectSet::Size() const { return static_cast<int>(objects.size()); }
+int ObjectSet::Size() const { return static_cast<int>(objects_.size()); }
 
 bool ObjectSet::Destroy() {
     Clear();
@@ -21,22 +21,22 @@ bool ObjectSet::Destroy() {
 void ObjectSet::Insert(Object const &Q) { Append(Q); }
 
 void ObjectSet::Append(Object const &Q) {
-    if (Attach(Q)) objects.insert(Q);
+    if (Attach(Q)) objects_.insert(Q);
 }
 
 void ObjectSet::Clear() {
-    while (!Empty()) Erase(begin());
+    while (!Empty()) Erase(Begin());
 }
 
 ObjectSet::iterator ObjectSet::Erase(iterator iter) {
     if (iter->Exists()) Detach(*iter);
 
-    return objects.erase(iter);
+    return objects_.erase(iter);
 }
 
 ObjectSet::iterator ObjectSet::Erase(Object const &Q) {
-    iterator A = objects.find(Q);
-    if (A != end()) return Erase(A);
+    iterator A = objects_.find(Q);
+    if (A != End()) return Erase(A);
 
     KAI_THROW_1(UnknownObject, Q.GetHandle());
 }

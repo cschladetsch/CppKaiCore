@@ -1,35 +1,35 @@
-#include "KAI/Language/Common/LexerBase.h"
+﻿#include "KAI/Language/Common/LexerBase.h"
 
 KAI_BEGIN
 
 int IsSpaceChar(int ch) { return ch == ' '; }
 
 LexerBase::LexerBase(const char *in, Registry &r)
-    : ProcessCommon(r), input(in), offset(0), lineNumber(0) {}
+    : ProcessCommon(r), input_(in), offset_(0), lineNumber_(0) {}
 
 void LexerBase::CreateLines() {
-    if (input.back() != '\n') input.push_back('\n');
+    if (input_.back() != '\n') input_.push_back('\n');
 
     size_t lineStart = 0;
-    for (size_t n = 0; n < input.size(); ++n) {
-        if (input[n] == '\n') {
-            lines.push_back(input.substr(lineStart, n - lineStart + 1));
+    for (size_t n = 0; n < input_.size(); ++n) {
+        if (input_[n] == '\n') {
+            lines_.push_back(input_.substr(lineStart, n - lineStart + 1));
             lineStart = n + 1;
         }
     }
 }
 
 char LexerBase::Current() const {
-    if (lineNumber == (int)lines.size()) return 0;
+    if (lineNumber_ == (int)lines_.size()) return 0;
 
-    return Line()[offset];
+    return Line()[offset_];
 }
 
-const std::string &LexerBase::Line() const { return GetLine(lineNumber); }
+const std::string &LexerBase::Line() const { return GetLine(lineNumber_); }
 
 bool LexerBase::EndOfLine() const {
     auto len = (int)Line().size();
-    return len == 0 || offset == (int)Line().size() - 1;
+    return len == 0 || offset_ == (int)Line().size() - 1;
 }
 
 char LexerBase::Peek() const {
@@ -37,32 +37,32 @@ char LexerBase::Peek() const {
 
     if (EndOfLine()) return 0;
 
-    return Line()[offset + 1];
+    return Line()[offset_ + 1];
 }
 
 Slice LexerBase::Gather(int (*filt)(int)) {
-    int start = offset;
+    int start = offset_;
     while (filt(Next()));
 
-    return Slice(start, offset);
+    return Slice(start, offset_);
 }
 
 char LexerBase::Next() {
     if (EndOfLine()) {
-        offset = 0;
-        ++lineNumber;
+        offset_ = 0;
+        ++lineNumber_;
     } else
-        ++offset;
+        ++offset_;
 
-    if (lineNumber == (int)lines.size()) return 0;
+    if (lineNumber_ == (int)lines_.size()) return 0;
 
-    return Line()[offset];
+    return Line()[offset_];
 }
 
 bool LexerBase::LexString() {
-    int start = offset;
+    int start = offset_;
     Next();
-    while (!Failed && Current() != '"') {
+    while (!failed && Current() != '"') {
         if (Current() == '\\') {
             switch (Next()) {
                 case '"':
@@ -86,7 +86,7 @@ bool LexerBase::LexString() {
 
     Next();
 
-    AddStringToken(lineNumber, Slice(start + 1, offset - 1));
+    AddStringToken(lineNumber_, Slice(start + 1, offset_ - 1));
 
     return true;
 }

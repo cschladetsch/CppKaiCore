@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/Object/Object.h>
 
@@ -10,71 +10,117 @@ KAI_BEGIN
 
 /// A list of Objects
 struct List : Container<List> {
-    typedef std::list<Object> Objects;
-    typedef Objects::const_iterator const_iterator;
-    typedef Objects::iterator iterator;
+    using Objects = std::list<Object>;
+    using const_iterator = Objects::const_iterator;
+    using iterator = Objects::iterator;
 
-   private:
-    Objects objects;
+private:
+    Objects objects_;
 
-   public:
-    bool Destroy() {
+public:
+    bool Destroy() override
+    {
         Clear();
         return true;
     }
 
-    iterator begin() { return objects.begin(); }
-    iterator end() { return objects.end(); }
-    const_iterator begin() const { return objects.begin(); }
-    const_iterator end() const { return objects.end(); }
+    iterator Begin()
+    {
+        return objects_.begin();
+    }
+    iterator End()
+    {
+        return objects_.end();
+    }
+    [[nodiscard]] const_iterator Begin() const
+    {
+        return objects_.begin();
+    }
+    [[nodiscard]] const_iterator End() const
+    {
+        return objects_.end();
+    }
 
-    iterator Begin() { return objects.begin(); }
-    iterator End() { return objects.end(); }
-    const_iterator Begin() const { return objects.begin(); }
-    const_iterator End() const { return objects.end(); }
-    int Size() const { return (int)objects.size(); }
-    bool Empty() const { return objects.empty(); }
-    Object Front() const { return objects.front(); }
-    Object Back() const { return objects.back(); }
+    [[nodiscard]] int Size() const
+    {
+        return static_cast<int>(objects_.size());
+    }
+    [[nodiscard]] bool Empty() const
+    {
+        return objects_.empty();
+    }
+    [[nodiscard]] Object Front() const
+    {
+        return objects_.front();
+    }
+    [[nodiscard]] Object Back() const
+    {
+        return objects_.back();
+    }
 
     void Clear();
 
-    void Append(Object const &Q);
-    void PushBack(Object const &Q) { Append(Q); }
+    void Append(Object const& q);
+    void PushBack(Object const& q)
+    {
+        Append(q);
+    }
     Object Pop();
     Object PopBack() { return Pop(); }
-    iterator Erase(iterator A);
-    iterator Erase(Object const &Q);
-    bool Contains(Object const &Q) const {
-        for (auto const &element : objects) {
-            if (element.GetHandle() == Q.GetHandle()) return true;
+    iterator Erase(iterator a);
+    iterator Erase(Object const& q);
+    [[nodiscard]] bool Contains(Object const& q) const
+    {
+        for (auto const& element : objects_) {
+            if (element.GetHandle() == q.GetHandle()) {
+                return true;
+            }
         }
         return false;
     }
 
-    void Erase2(Object Q) { Erase(Q); }
-    void Append2(Object Q) { Append(Q); }
-    bool Contains2(Object Q) const { return Contains(Q); }
-
-    friend bool operator==(const List &A, const List &B) {
-        return A.objects == B.objects;
+    void Erase2(const Object& q)
+    {
+        Erase(q);
     }
-    friend bool operator<(const List &A, const List &B) {
-        return A.objects < B.objects;
+    void Append2(const Object& q)
+    {
+        Append(q);
+    }
+    [[nodiscard]] bool Contains2(const Object& q) const
+    {
+        return Contains(q);
     }
 
-    void SetChildSwitch(int N, bool M) {
-        for (auto &elem : objects) elem.SetSwitch(N, M);
+    friend bool operator==(const List& a, const List& b)
+    {
+        return a.objects_ == b.objects_;
+    }
+    friend bool operator<(const List& a, const List& b)
+    {
+        return a.objects_ < b.objects_;
+    }
+
+    void SetChildSwitch(int n, bool m)
+    {
+        for (auto& elem : objects_) {
+            elem.SetSwitch(n, m);
+        }
     }
 
     static void Register(Registry &);
 };
 
+inline List::iterator begin(List &l) { return l.Begin(); }
+inline List::iterator end(List &l) { return l.End(); }
+inline List::const_iterator begin(List const &l) { return l.Begin(); }
+inline List::const_iterator end(List const &l) { return l.End(); }
+
 StringStream &operator<<(StringStream &, const List &);
 BinaryStream &operator<<(BinaryStream &, const List &);
 BinaryStream &operator>>(BinaryStream &, List &);
 
-HashValue GetHash(const List &A);
+HashValue GetHash(const List& a);
 
 KAI_TYPE_TRAITS(List, Number::List,
                 Properties::StringStreamInsert | Properties::BinaryStreaming |

@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 
 #include "KAI/Core/BuiltinTypes.h"
 
@@ -9,35 +9,35 @@ void ToXmlStream(const Object &Q, StringStream &S, int level);
 
 ObjectConstructParams::ObjectConstructParams(Registry *R, const ClassBase *C,
                                              Handle H, Constness K)
-    : registry(R), class_base(C), handle(H), constness(K) {}
+    : registry(R), classBase(C), handle(H), constness(K) {}
 
 ObjectConstructParams::ObjectConstructParams(StorageBase *Q) {
     registry = Q->GetRegistry();
     handle = Q->GetHandle();
-    class_base = Q->GetClass();
+    classBase = Q->GetClass();
 }
 
 Object::Object(const ObjectConstructParams &P)
-    : registry(P.registry), class_base(P.class_base), handle(P.handle) {}
+    : registry_(P.registry), classBase_(P.classBase), handle_(P.handle) {}
 
 Object::Object(Object const &Q) {
     // Reject obviously invalid source pointer (e.g. null or near-null).
     if (reinterpret_cast<uintptr_t>(&Q) < 0x1000) {
-        registry = nullptr;
-        class_base = nullptr;
-        handle = Handle();
+        registry_ = nullptr;
+        classBase_ = nullptr;
+        handle_ = Handle();
         return;
     }
 
     if (Q.Valid()) {
-        registry = Q.registry;
-        class_base = Q.class_base;
-        handle = Q.handle;
+        registry_ = Q.registry_;
+        classBase_ = Q.classBase_;
+        handle_ = Q.handle_;
     } else {
         // Null objects are common in Rho/Pi as intermediate values.
-        registry = nullptr;
-        class_base = nullptr;
-        handle = Handle();
+        registry_ = nullptr;
+        classBase_ = nullptr;
+        handle_ = Handle();
     }
 }
 
@@ -57,20 +57,20 @@ Object &Object::operator=(Object const &Q) {
 
     // When overwriting a live object, update GC color to avoid leaks.
     if (Valid()) {
-        StorageBase *base = GetRegistry()->GetStorageBase(handle);
+        StorageBase *base = GetRegistry()->GetStorageBase(handle_);
         if (base) {
             base->DetermineNewColor();
         }
     }
 
     if (Q.Valid()) {
-        class_base = Q.class_base;
-        registry = Q.registry;
-        handle = Q.handle;
+        classBase_ = Q.classBase_;
+        registry_ = Q.registry_;
+        handle_ = Q.handle_;
     } else {
-        class_base = nullptr;
-        registry = nullptr;
-        handle = Handle();
+        classBase_ = nullptr;
+        registry_ = nullptr;
+        handle_ = Handle();
     }
 
     return *this;
@@ -159,8 +159,8 @@ Type::Number Object::GetTypeNumber() const {
     // checks IsMarked() and an object is briefly marked before its deletion
     // cascade completes. Calling Valid() here would return false mid-deletion
     // and cause a spurious TypeMismatch in SetSwitch.
-    if (class_base == nullptr) return Type::Number::None;
-    return class_base->GetTypeNumber();
+    if (classBase_ == nullptr) return Type::Number::None;
+    return classBase_->GetTypeNumber();
 }
 
 bool Object::Valid() const {
@@ -171,14 +171,14 @@ bool Object::Valid() const {
         return false;
     }
 
-    if (registry == nullptr) return false;
-    if (handle.GetValue() == 0) return false;
-    if (class_base == nullptr) return false;
+    if (registry_ == nullptr) return false;
+    if (handle_.GetValue() == 0) return false;
+    if (classBase_ == nullptr) return false;
 
     // Treat objects that have been marked for GC deletion as invalid.
     // GetStorageBase(handle) returns nullptr if the handle is unknown; it
     // does not throw.
-    StorageBase *base = registry->GetStorageBase(handle);
+    StorageBase *base = registry_->GetStorageBase(handle_);
     if (base && base->IsMarked()) return false;
 
     return true;
@@ -188,18 +188,18 @@ bool Object::Exists() const {
     if (!Valid()) return false;
 
     // Verify the handle is still present in the registry (not yet freed).
-    StorageBase *storageBase = registry->GetStorageBase(handle);
+    StorageBase *storageBase = registry_->GetStorageBase(handle_);
     return storageBase != nullptr;
 }
 
 bool Object::OnDeathRow() const {
     if (!Valid()) return false;
-    return registry->OnDeathRow(handle);
+    return registry_->OnDeathRow(handle_);
 }
 
 StorageBase *Object::GetStorageBase(Handle handle) const {
     if (!Valid()) return nullptr;
-    return registry->GetStorageBase(handle);
+    return registry_->GetStorageBase(handle);
 }
 
 StorageBase &Object::GetStorageBase() const {
@@ -479,16 +479,16 @@ BinaryStream &operator>>(BinaryStream &stream, Object &extracted) {
 }
 
 Object::ChildProxy::ChildProxy(Object const &Q, const char *P)
-    : registry(Q.GetRegistry()), handle(Q.GetHandle()), label(P) {}
+    : registry_(Q.GetRegistry()), handle_(Q.GetHandle()), label_(P) {}
 
 Object::ChildProxy::ChildProxy(Object const &Q, Label const &L)
-    : registry(Q.GetRegistry()), handle(Q.GetHandle()), label(L) {}
+    : registry_(Q.GetRegistry()), handle_(Q.GetHandle()), label_(L) {}
 
 Object Object::ChildProxy::GetObject() const {
-    if (!registry) KAI_THROW_1(UnknownObject, Handle(0));
+    if (!registry_) KAI_THROW_1(UnknownObject, Handle(0));
 
-    StorageBase *base = registry->GetStorageBase(handle);
-    if (!base) KAI_THROW_1(UnknownObject, handle);
+    StorageBase *base = registry_->GetStorageBase(handle_);
+    if (!base) KAI_THROW_1(UnknownObject, handle_);
 
     return *base;
 }
@@ -620,7 +620,7 @@ Object operator/(Object const &A, Object const &B) {
 }
 
 Object Object::NewFromTypeNumber(Type::Number N) const {
-    return registry->NewFromTypeNumber(N);
+    return registry_->NewFromTypeNumber(N);
 }
 
 KAI_END

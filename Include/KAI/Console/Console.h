@@ -22,35 +22,35 @@ struct Coloriser;
 class BinaryStream;
 
 enum class NetworkMessageType : unsigned char {
-    CONSOLE_COMMAND = net::kUserPacketStart + 10,
-    CONSOLE_RESULT = net::kUserPacketStart + 11,
-    CONSOLE_BROADCAST = net::kUserPacketStart + 12,
-    CONSOLE_LANGUAGE_SWITCH = net::kUserPacketStart + 13,
-    CONSOLE_BINARY = net::kUserPacketStart + 14
+    ConsoleCommand = net::kUserPacketStart + 10,
+    ConsoleResult = net::kUserPacketStart + 11,
+    ConsoleBroadcast = net::kUserPacketStart + 12,
+    ConsoleLanguageSwitch = net::kUserPacketStart + 13,
+    ConsoleBinary = net::kUserPacketStart + 14
 };
 
 struct NetworkConsoleMessage {
     std::string senderId;
     std::string command;
     std::string result;
-    Language language;
-    long timestamp;
+    Language language{Language::Pi};
+    long timestamp{0};
 
-    NetworkConsoleMessage() : language(Language::Pi), timestamp(0) {}
+    NetworkConsoleMessage() {}
 };
 
 class Console : public Reflected {
-    Tree tree;
+    Tree tree_;
     Registry *reg_;
-    Pointer<Executor> executor;
-    Pointer<Compiler> compiler;
-    std::shared_ptr<Memory::IAllocator> alloc;
-    Language language;
-    std::shared_ptr<TranslatorCommon> translator;
+    Pointer<Executor> executor_;
+    Pointer<Compiler> compiler_;
+    std::shared_ptr<memory::IAllocator> alloc_;
+    Language language_;
+    std::shared_ptr<TranslatorCommon> translator_;
 
-    std::vector<std::string> commandHistory;
-    std::string historyFile;
-    static const size_t maxHistorySize = 1000;
+    std::vector<std::string> commandHistory_;
+    std::string historyFile_;
+    static const size_t kMaxHistorySize = 1000;
 
     // Network members
     std::unique_ptr<net::NetPeer> peer_;
@@ -69,8 +69,8 @@ class Console : public Reflected {
 
    public:
     Console();
-    Console(std::shared_ptr<Memory::IAllocator>);
-    ~Console();
+    Console(std::shared_ptr<memory::IAllocator>);
+    ~Console() override;
 
     void SetLanguage(Language lang);
     void SetLanguage(int lang);
@@ -78,7 +78,7 @@ class Console : public Reflected {
 
     void SetTranslator(std::shared_ptr<TranslatorCommon> trans);
     std::shared_ptr<TranslatorCommon> GetTranslator() const {
-        return translator;
+        return translator_;
     }
 
     void WritePrompt(std::ostream &out) const;
@@ -102,13 +102,23 @@ class Console : public Reflected {
     std::string currentCommand;  // For !# support
     bool shellMode = false;      // Toggle for shell mode
     Registry &GetRegistry() const { return *reg_; }
-    Tree &GetTree() { return tree; }
-    Tree const &GetTree() const { return tree; }
+    Tree &GetTree() {
+        return tree_;
+    }
+    Tree const &GetTree() const {
+        return tree_;
+    }
 
-    Object GetRoot() const { return tree.GetRoot(); }
+    Object GetRoot() const {
+        return tree_.GetRoot();
+    }
 
-    Pointer<Executor> GetExecutor() const { return executor; }
-    Pointer<Compiler> GetCompiler() const { return compiler; }
+    Pointer<Executor> GetExecutor() const {
+        return executor_;
+    }
+    Pointer<Compiler> GetCompiler() const {
+        return compiler_;
+    }
 
     Pointer<Continuation> Compile(const char *, Structure);
     void Execute(const String &text, Structure st = Structure::Program);
@@ -164,38 +174,36 @@ class Console : public Reflected {
     bool IsStructureIncomplete(const String &text) const;
 
    protected:
-    void Create();
-    void CreateTree();
-    void RegisterTypes();
-    void ExposeTypesToTree(Object types);
+       void Create() override;
+       void CreateTree();
+       void RegisterTypes();
+       void ExposeTypesToTree(Object types);
 
-    // Network protected methods
-    void ProcessNetworkMessages();
-    void HandleNetworkPacket(const net::NetPacket& packet);
-    void HandleConsoleCommand(const net::NetPacket& packet);
-    void HandleConsoleResult(const net::NetPacket& packet);
-    void HandleConsoleBroadcast(const net::NetPacket& packet);
-    void HandleLanguageSwitch(const net::NetPacket& packet);
-    void HandleConsoleBinary(const net::NetPacket& packet);
-    void SendResultToPeer(const net::NetAddress& peer, const std::string& command, 
-                         const std::string& result);
-    void AddPeer(const net::NetAddress& address);
-    void RemovePeer(const net::NetAddress& address);
-    void LogNetworkMessage(const NetworkConsoleMessage& message);
-    std::string GenerateConsoleId();
-    std::string AddressToString(const net::NetAddress& addr) const;
-    net::NetAddress FindPeerByAddress(const std::string& addr) const;
-    std::string MakePeerKey(const net::NetAddress& addr) const;
-    Pointer<Executor> GetOrCreatePeerExecutor(const net::NetAddress& addr);
-    Pointer<Executor> GetOrCreatePeerExecutor(const std::string& peerKey);
-    void AssignPeerConsoleId(const net::NetAddress& addr,
-                             const std::string& consoleId);
-    Pointer<Executor> GetPeerExecutorByConsoleId(const std::string& consoleId) const;
-    void RemovePeerExecutor(const net::NetAddress& addr);
-    void ClearPeerExecutors();
-    void CopyMainStackToExecutor(Pointer<Executor> target) const;
-    void CopyExecutorStackToMain(Pointer<Executor> source);
-    std::string SimplifyStackDump(const std::string& dump) const;
+       // Network protected methods
+       void ProcessNetworkMessages();
+       void HandleNetworkPacket(const net::NetPacket& packet);
+       void HandleConsoleCommand(const net::NetPacket& packet);
+       void HandleConsoleResult(const net::NetPacket& packet);
+       void HandleConsoleBroadcast(const net::NetPacket& packet);
+       void HandleLanguageSwitch(const net::NetPacket& packet);
+       void HandleConsoleBinary(const net::NetPacket& packet);
+       void SendResultToPeer(const net::NetAddress& peer, const std::string& command, const std::string& result);
+       void AddPeer(const net::NetAddress& address);
+       void RemovePeer(const net::NetAddress& address);
+       void LogNetworkMessage(const NetworkConsoleMessage& message);
+       std::string GenerateConsoleId();
+       std::string AddressToString(const net::NetAddress& addr) const;
+       net::NetAddress FindPeerByAddress(const std::string& addr) const;
+       std::string MakePeerKey(const net::NetAddress& addr) const;
+       Pointer<Executor> GetOrCreatePeerExecutor(const net::NetAddress& addr);
+       Pointer<Executor> GetOrCreatePeerExecutor(const std::string& peerKey);
+       void AssignPeerConsoleId(const net::NetAddress& addr, const std::string& consoleId);
+       Pointer<Executor> GetPeerExecutorByConsoleId(const std::string& consoleId) const;
+       void RemovePeerExecutor(const net::NetAddress& addr);
+       void ClearPeerExecutors();
+       void CopyMainStackToExecutor(Pointer<Executor> target) const;
+       void CopyExecutorStackToMain(Pointer<Executor> source);
+       std::string SimplifyStackDump(const std::string& dump) const;
 
    private:
     bool end_ = false;

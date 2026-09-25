@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/Config/Base.h>
 #include <KAI/Core/Detail/AddArgType.h>
@@ -24,14 +24,14 @@ struct VoidFun : FunctionBase {
     // Modern version using std::function instead of raw function pointer
     using Func = std::function<void(Args...)>;
     Func fun;
-    using FunctionBase::arguments;
-    using FunctionBase::return_type;
+    using FunctionBase::arguments_;
+    using FunctionBase::returnType_;
 
     static constexpr int arity = sizeof...(Args);
 
     VoidFun(Func f, const Label &N) : fun(std::move(f)), FunctionBase(N) {
-        AddArgType<arity, Args...>::Add(arguments);
-        return_type = Type::Traits<void>::Number;
+        AddArgType<arity, Args...>::Add(arguments_);
+        returnType_ = Type::Traits<void>::Number;
     }
 
     void Invoke(Registry &reg, Stack &stack) {
@@ -48,12 +48,12 @@ struct NonVoidFun : FunctionBase {
     Func fun;
     std::tuple<Args...> args_;
     static constexpr int arity = sizeof...(Args);
-    using FunctionBase::arguments;
-    using FunctionBase::return_type;
+    using FunctionBase::arguments_;
+    using FunctionBase::returnType_;
 
     NonVoidFun(Func f, const Label &N) : fun(std::move(f)), FunctionBase(N) {
-        AddArgType<arity, Args...>::Add(arguments);
-        return_type = Type::Traits<Ret>::Number;
+        AddArgType<arity, Args...>::Add(arguments_);
+        returnType_ = Type::Traits<Ret>::Number;
     }
 
     void Invoke(Registry &reg, Stack &stack) {
@@ -88,7 +88,7 @@ struct Function : function_detail::FunctionSelect<R, Args...>::Type {
 #endif
 
 inline FunctionBase *AddDescription(FunctionBase *F, const char *D) {
-    if (D) F->Description = D;
+    if (D) F->description = D;
     return F;
 }
 

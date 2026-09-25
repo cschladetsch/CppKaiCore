@@ -5,10 +5,13 @@
 KAI_BEGIN
 
 struct BasePointerBase {
-    virtual ~BasePointerBase() {}
+    virtual ~BasePointerBase() = default;
 
     void Create() {}
-    bool Destroy() { return true; }
+    static bool Destroy()
+    {
+        return true;
+    }
 
     static void Register(Registry &);
 };

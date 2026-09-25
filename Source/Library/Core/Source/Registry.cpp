@@ -1,4 +1,4 @@
-#include <KAI/Core/BuiltinTypes/Signed32.h>
+﻿#include <KAI/Core/BuiltinTypes/Signed32.h>
 #include <KAI/Core/Memory/StandardAllocator.h>
 #include <KAI/Core/Object/Class.h>
 #include <KAI/Core/Object/IObject.h>
@@ -15,18 +15,18 @@
 KAI_BEGIN
 
 Registry::Registry() {
-    allocator_ = std::make_shared<Memory::StandardAllocator>();
+    allocator_ = std::make_shared<memory::StandardAllocator>();
     Construct();
 }
 
-Registry::Registry(std::shared_ptr<Memory::IAllocator> alloc) {
+Registry::Registry(std::shared_ptr<memory::IAllocator> alloc) {
     allocator_ = std::move(alloc);
     Construct();
 }
 
 void Registry::Construct() {
     classes_.resize(2000, nullptr);
-    gc_trace_level = 1;
+    gcTraceLevel = 1;
     tree_ = nullptr;
     std::fill(classes_.begin(), classes_.end(),
               static_cast<ClassBase const *>(nullptr));
@@ -105,7 +105,7 @@ void Registry::DestroyObject(Handle handle, bool force) {
         }
 
 #ifdef KAI_DEBUG_REGISTRY
-        bool trace = gc_trace_level > 3;
+        bool trace = gcTraceLevel > 3;
         trace = trace || IsWatching(base);
         if (trace) {
             try {
@@ -134,7 +134,7 @@ void Registry::DestroyObject(Handle handle, bool force) {
             retainedObjects_.erase(retained);
 
         succeeded = true;
-    } catch (const Exception::Base &e) {
+    } catch (const exception::Base &e) {
         KAI_TRACE_ERROR() << "Exception during object destruction: "
                           << e.ToString();
         // Log error but attempt recovery below
@@ -159,7 +159,7 @@ void Registry::DestroyObject(Handle handle, bool force) {
             instances_.erase(found);
 
             // Add an entry to a failed deletion log that can be reviewed later
-            failed_deletions_.push_back(handle);
+            failedDeletions_.push_back(handle);
         }
     }
 }
@@ -247,7 +247,7 @@ void Registry::AddClass(const ClassBase *klass) {
 
 Object Registry::GetObject(Handle handle) const {
 #ifdef KAI_DEBUG_REGISTRY
-    if (IsWatching(handle) && gc_trace_level > 1) KAI_TRACE() << handle;
+    if (IsWatching(handle) && gcTraceLevel > 1) KAI_TRACE() << handle;
 #endif
 
     if (handle == Handle(0)) return Object();
@@ -487,7 +487,7 @@ void Registry::TriColor() {
     // See also https://github.com/cschladetsch/Monotonic
     const int MaxCycles = 17;
 
-    if (gc_trace_level >= 1)
+    if (gcTraceLevel >= 1)
         KAI_TRACE_3(static_cast<int>(instances_.size()),
                     static_cast<int>(grey_.size()),
                     static_cast<int>(white_.size()));
@@ -495,7 +495,7 @@ void Registry::TriColor() {
     int cycle = 0;
     for (; cycle < MaxCycles; ++cycle) {
 #ifdef KAI_DEBUG_REGISTRY
-        if (gc_trace_level > 2) TraceTriColor();
+        if (gcTraceLevel > 2) TraceTriColor();
 #endif
 
         if (grey_.empty()) {
@@ -513,7 +513,7 @@ void Registry::TriColor() {
         base->SetColor(ObjectColor::Black);
     }
 
-    if (gc_trace_level >= 1) KAI_TRACE() << "TriColor: " << cycle << " passes";
+    if (gcTraceLevel >= 1) KAI_TRACE() << "TriColor: " << cycle << " passes";
 }
 
 void Registry::ReleaseWhite() {
@@ -526,7 +526,7 @@ void Registry::ReleaseWhite() {
     for (auto const &handle : to_delete) DestroyObject(handle);
 }
 
-void Registry::SetGCTraceLevel(int N) { gc_trace_level = N; }
+void Registry::SetGCTraceLevel(int N) { gcTraceLevel = N; }
 
 static void RemoveFromSet(Registry::ColoredSet &handles, Handle handle) {
     Registry::ColoredSet::iterator entry = handles.find(handle);
@@ -539,7 +539,7 @@ bool Registry::SetColor(StorageBase &base, ObjectColor::Color color) {
     if (base.IsMarked() && color != ObjectColor::White) return false;
 
 #ifdef KAI_DEBUG_REGISTRY
-    if (IsWatching(base) && gc_trace_level > 0)
+    if (IsWatching(base) && gcTraceLevel > 0)
         KAI_TRACE_3(base.GetHandle(), base.GetClass()->GetName(), color);
 #endif
 
@@ -622,8 +622,8 @@ bool SameHandle(Object const &A, Object const &B) {
 void Registry::AddRoot(Object const &root) {
     if (!root.Exists()) return;
 
-    if (find(roots_.begin(), roots_.end(), root, SameHandle) == roots_.end())
-        roots_.push_back(root);
+    if (find(roots.begin(), roots.end(), root, SameHandle) == roots.end())
+        roots.push_back(root);
 
     SetColor(root.GetStorageBase(), ObjectColor::Grey);
 }
@@ -667,7 +667,7 @@ void Registry::WatchType(Type::Number N, bool watch) {
 void Registry::TraceSet(Registry::ColoredSet const &set,
                         const char *name_) const {
     KAI_TRACE() << name_ << "(" << (int)set.size() << "): ";
-    if (gc_trace_level > 2) {
+    if (gcTraceLevel > 2) {
         for (auto handle : set) {
             Object Q = GetObject(handle);
             if (!Q.Exists()) continue;
@@ -679,9 +679,9 @@ void Registry::TraceSet(Registry::ColoredSet const &set,
 
 void Registry::TraceTriColor() const {
     TraceGCCounts();
-    if (gc_trace_level > 1) TraceWhite();
+    if (gcTraceLevel > 1) TraceWhite();
 
-    if (gc_trace_level > 1) TraceGrey();
+    if (gcTraceLevel > 1) TraceGrey();
 }
 
 void Registry::TraceGCCounts() const {

@@ -1,4 +1,4 @@
-#include <KAI/Core/BuiltinTypes.h>
+﻿#include <KAI/Core/BuiltinTypes.h>
 #include <KAI/Core/Config/Base.h>
 #include <KAI/Core/Type/Number.h>
 
@@ -43,7 +43,7 @@ HashValue GetHash(const Map &M) {
 
 HashValue GetHash(const String &S) {
     HashValue hash = 5381;
-    String::const_iterator A = S.begin(), B = S.end();
+    String::const_iterator A = S.Begin(), B = S.End();
     for (; A != B; ++A) hash = ((hash << 5) + hash) + (int)*A;
     return hash;
 }

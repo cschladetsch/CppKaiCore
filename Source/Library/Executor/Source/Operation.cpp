@@ -1,4 +1,4 @@
-#include "KAI/Executor/Operation.h"
+﻿#include "KAI/Executor/Operation.h"
 
 #include "KAI/Core/BinaryStream.h"  // Include the full implementation of BinaryStream
 #include "KAI/Core/Object/ClassBuilder.h"  // Include ClassBuilder for Register function
@@ -161,7 +161,7 @@ const char *Operation::ToString(int value) {
     return "UnnnamedOp";
 }
 
-char const *Operation::ToString() const { return Operation::ToString(value); }
+char const *Operation::ToString() const { return Operation::ToString(value_); }
 
 void Operation::Register(Registry &registry) {
     ClassBuilder<Operation>(registry, "Operation");

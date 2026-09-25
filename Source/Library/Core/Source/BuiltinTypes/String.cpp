@@ -1,4 +1,4 @@
-#include <KAI/Core/Object/ClassBuilder.h>
+﻿#include <KAI/Core/Object/ClassBuilder.h>
 #include <KAI/Core/Type/Properties.h>
 
 #include <algorithm>
@@ -10,7 +10,7 @@ KAI_BEGIN
 
 String String::LowerCase() const {
     String result((int)string_.size(), ' ');
-    std::transform(string_.begin(), string_.end(), result.begin(),
+    std::transform(string_.begin(), string_.end(), result.Begin(),
                    [](unsigned char ch) {
                        return static_cast<char>(std::tolower(ch));
                    });
@@ -19,7 +19,7 @@ String String::LowerCase() const {
 
 String String::UpperCase() const {
     String result((int)string_.size(), ' ');
-    std::transform(string_.begin(), string_.end(), result.begin(),
+    std::transform(string_.begin(), string_.end(), result.Begin(),
                    [](unsigned char ch) {
                        return static_cast<char>(std::toupper(ch));
                    });
@@ -101,7 +101,7 @@ BinaryStream &operator>>(BinaryStream &S, String &T) {
 
 void String::Register(Registry &R) {
     ClassBuilder<String>(R, Label("String"))
-        .Methods("Size", &String::Size)("Empty", &String::Empty)(
+        .methods("Size", &String::Size)("Empty", &String::Empty)(
             "Clear", &String::Clear);
     // Note: Plus and Equiv operations are already registered via
     // KAI_TYPE_TRAITS in TraitMacros.h

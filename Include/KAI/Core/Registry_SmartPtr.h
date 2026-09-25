@@ -44,11 +44,11 @@ class Registry_SmartPtr {
     Roots roots_;
 
     // Smart pointer to memory allocator
-    std::shared_ptr<Memory::IAllocator> allocator_;
+    std::shared_ptr<memory::IAllocator> allocator_;
 
    public:
     Registry_SmartPtr();
-    explicit Registry_SmartPtr(std::shared_ptr<Memory::IAllocator> alloc);
+    explicit Registry_SmartPtr(std::shared_ptr<memory::IAllocator> alloc);
     ~Registry_SmartPtr() = default;  // No manual cleanup needed!
 
     // Add a class using shared_ptr

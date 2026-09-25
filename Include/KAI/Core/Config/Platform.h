@@ -33,9 +33,9 @@
     struct X;                     \
     KAI_PLATFORM_END
 
-#define KAI_PLATFORM_IMPL_DECL_CLASS(X) \
-    KAI_PLATFORM_BEGIN                  \
-    class X;                            \
+#define KAI_PLATFORM_IMPL_DECL_CLASS(X)                                                                                \
+    KAI_PLATFORM_BEGIN                                                                                                 \
+    class(X);                                                                                                          \
     KAI_PLATFORM_END
 
 // EOF

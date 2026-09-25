@@ -16,32 +16,32 @@ KAI_BEGIN
 
 class Tree;
 
-template <class T>
-Pointer<ClassBase const *> NewClass(Registry &R, const Label &name);
+template <class T> Pointer<ClassBase const*> NewClass(Registry& r, const Label& name);
 
 struct Registry {
    public:
 #ifdef KAI_BOOST_UNORDERED_REGISTRY
-    typedef std::unordered_map<Handle, StorageBase *, HashHandle> Instances;
-#elif defined(KAI_HASH_TABLE_REGISTRY)
-    typedef std::hash_map<Handle, StorageBase *, HashHandle> Instances;
+       using Instances = std::unordered_map<Handle, StorageBase*, HashHandle>;
+#elifdef KAI_HASH_TABLE_REGISTRY
+       typedef std::hash_map<Handle, StorageBase*, HashHandle> Instances;
 #else
     typedef std::map<Handle, StorageBase *> Instances;
 #endif
-    typedef std::vector<const ClassBase *> Classes;
-    typedef HandleSet Handles, DeathRow;
-    typedef HandleSet RetainedObjects;
-    typedef std::vector<Handle> VectorHandles;
-    typedef std::set<Handle> ColoredSet;
+       using Classes = std::vector<const ClassBase*>;
+       using Handles = HandleSet;
+       using DeathRow = HandleSet;
+       using RetainedObjects = HandleSet;
+       using VectorHandles = std::vector<Handle>;
+       using ColoredSet = std::set<Handle>;
 
-    // _pools of objects indexed by type number
-    typedef std::vector<std::vector<StorageBase *> > Pools;
+       // _pools of objects indexed by type number
+       using Pools = std::vector<std::vector<StorageBase*>>;
 
-    /// A number in range [0..100)
-    typedef int Percentage;
+       /// A number in range [0..100)
+       using Percentage = int;
 
-    typedef std::list<Object> Roots;
-    Roots roots_;
+       using Roots = std::list<Object>;
+       Roots roots;
 
    private:
     friend struct StorageBase;
@@ -59,33 +59,38 @@ struct Registry {
     Tree *tree_{nullptr};
     RetainedObjects retainedObjects_;
     Pools pools_;
-    std::shared_ptr<Memory::IAllocator> allocator_;
+    std::shared_ptr<memory::IAllocator> allocator_;
     bool ownsAllocator_{false};
 
     // Track handles that couldn't be properly deleted
-    std::vector<Handle> failed_deletions_;
+    std::vector<Handle> failedDeletions_;
 
-   public:
+public:
     Registry();
-    Registry(std::shared_ptr<Memory::IAllocator>);
+    Registry(std::shared_ptr<memory::IAllocator>);
     ~Registry();
 
-    Memory::IAllocator &GetMemorySystem() const { return *allocator_; }
+    [[nodiscard]] memory::IAllocator& GetMemorySystem() const
+    {
+        return *allocator_;
+    }
 
     template <class T>
     Pointer<ClassBase const *> AddClass() {
         return NewClass<T>(*this, Label(String(Type::Traits<T>::Name())));
     }
 
-    template <class T>
-    Pointer<ClassBase const *> AddClass(const Label &N) {
-        return NewClass<T>(*this, N);
+    template <class T> Pointer<ClassBase const*> AddClass(const Label& n)
+    {
+        return NewClass<T>(*this, n);
     }
 
     template <class T>
     Object New() {
         const ClassBase *klass = GetClass(Type::Traits<T>::Number);
-        if (klass == 0) KAI_THROW_0(UnknownClass<T>);
+        if (klass == nullptr) {
+            KAI_THROW_0(UnknownClass<T>);
+        }
         return NewFromClass(klass);
     }
 
@@ -110,9 +115,11 @@ struct Registry {
     template <class T>
     Storage<T> *NewStorage() {
         const ClassBase *klass = GetClass(Type::Traits<T>::Number);
-        if (klass == 0) KAI_THROW_0(UnknownClass<T>);
-        Object Q = NewFromClass(klass);
-        return static_cast<Storage<T> *>(Q.GetBasePtr());
+        if (klass == nullptr) {
+            KAI_THROW_0(UnknownClass<T>);
+        }
+        Object q = NewFromClass(klass);
+        return static_cast<Storage<T>*>(q.GetBasePtr());
     }
 
     template <class T>
@@ -120,16 +127,20 @@ struct Registry {
         return GetClass(Type::Traits<T>::Number);
     }
 
-    RetainedObjects const &GetRetainedObjects() const {
+    [[nodiscard]] RetainedObjects const& GetRetainedObjects() const
+    {
         return retainedObjects_;
     }
     void PruneRetained();
     const ClassBase *GetClass(Type::Number);
     const ClassBase *GetClass(const Label &);
-    StorageBase *GetStorageBase(Handle) const;
+    [[nodiscard]] StorageBase* GetStorageBase(Handle) const;
 
-    Object GetObject(Handle) const;
-    bool ContainsHandle(Handle handle) const { return instances_.find(handle) != instances_.end(); }
+    [[nodiscard]] Object GetObject(Handle) const;
+    [[nodiscard]] bool ContainsHandle(Handle handle) const
+    {
+        return instances_.contains(handle);
+    }
 
     template <class T>
     Pointer<T> GetPointer(Handle handle) const {
@@ -144,38 +155,53 @@ struct Registry {
     void Delete(Handle);
     void Delete(Object const &);
 
-    void AddClass(const ClassBase *K);
+    void AddClass(const ClassBase* k);
 
     template <class T>
     void FreeResources(T *p) {
         allocator_->DeAllocate(p);
     }
 
-    template <class T>
-    Storage<T> *CloneStorage(const Object &Q) {
+    template <class T> Storage<T>* CloneStorage(const Object& q)
+    {
         KAI_NOT_IMPLEMENTED();
     }
 
     Pointer<ClassBase const *> AddClass(Type::Number, ClassBase const *);
     void Clear();
     void ClearInstances();
-    const Instances &GetInstances() const { return instances_; }
-    const Classes &GetClasses() const { return classes_; }
-    Percentage CalcMemoryUsage() const;
-    Percentage CalcMemoryFragmentationPercentage() const;
+    [[nodiscard]] const Instances& GetInstances() const
+    {
+        return instances_;
+    }
+    [[nodiscard]] const Classes& GetClasses() const
+    {
+        return classes_;
+    }
+    [[nodiscard]] Percentage CalcMemoryUsage() const;
+    [[nodiscard]] Percentage CalcMemoryFragmentationPercentage() const;
     void DefragmentMemory();
-    Tree *GetTree() const { return tree_; }
+    [[nodiscard]] Tree* GetTree() const
+    {
+        return tree_;
+    }
 
     // Check if this registry instance is valid and operational
-    bool IsValid() const;
+    [[nodiscard]] bool IsValid() const;
     void SetTree(Tree &);
     bool Pin(Handle);
     bool Unpin(Handle);
-    bool Pin(const Object &Q) { return Pin(Q.GetHandle()); }
-    bool Unpin(const Object &Q) { return Unpin(Q.GetHandle()); }
+    bool Pin(const Object& q)
+    {
+        return Pin(q.GetHandle());
+    }
+    bool Unpin(const Object& q)
+    {
+        return Unpin(q.GetHandle());
+    }
 
-    Object NewFromTypeNumber(Type::Number type_number);
-    Object NewFromClassName(const char *classname_str);
+    Object NewFromTypeNumber(Type::Number typeNumber);
+    Object NewFromClassName(const char* classnameStr);
     Object NewFromClass(const ClassBase *klass);
 
     void AddRoot(Object const &root);
@@ -190,18 +216,21 @@ struct Registry {
     void DestroyObject(Handle, bool force = false);
     void GarbageCollect();
     bool SetColor(StorageBase &, ObjectColor::Color);
-    bool OnDeathRow(Handle) const;
+    [[nodiscard]] bool OnDeathRow(Handle) const;
 
-    int gc_trace_level{};
+    int gcTraceLevel{};
     void SetGCTraceLevel(int);
 
     // Get a list of handles that failed deletion
-    const std::vector<Handle> &GetFailedDeletions() const {
-        return failed_deletions_;
+    [[nodiscard]] const std::vector<Handle>& GetFailedDeletions() const
+    {
+        return failedDeletions_;
     }
 
     // Clear the list of failed deletions
-    void ClearFailedDeletions() { failed_deletions_.clear(); }
+    void ClearFailedDeletions() {
+        failedDeletions_.clear();
+    }
 
 #ifdef KAI_DEBUG_REGISTRY
     void DeleteRetained();
@@ -255,12 +284,15 @@ struct Registry {
 
     void NominateAll();
     void DestroyNominated();
-    int GetDeathrowSize() const { return (int)deathRow_.size(); }
+    [[nodiscard]] int GetDeathrowSize() const
+    {
+        return static_cast<int>(deathRow_.size());
+    }
 };
 
-template <class T>
-Storage<T> *NewStorage(Registry &R) {
-    return R.NewStorage<T>();
+template <class T> Storage<T>* NewStorage(Registry& r)
+{
+    return r.NewStorage<T>();
 }
 
 #ifdef KAI_DEBUG_REGISTRY

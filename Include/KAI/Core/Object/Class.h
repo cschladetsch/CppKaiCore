@@ -26,61 +26,80 @@ void MarkGrey(Object const &);
 template <class T>
 class Class : public ClassBase {
    public:
-    typedef typename Type::Traits<T> Traits;
-    enum { Props = Traits::Props };
+       using Traits = typename Type::Traits<T>;
+       enum { Props = Traits::Props };
 
-    Class(Label const &name) : ClassBase(name, Type::Traits<T>::Number) {}
+       Class(Label const& name) : ClassBase(name, Type::Traits<T>::Number) {}
 
-    int GetTraitsProperties() const { return Props; }
+       [[nodiscard]] int GetTraitsProperties() const override
+       {
+           return Props;
+       }
 
-    bool HasTraitsProperty(int N) const { return (Props & N) != 0; }
+       [[nodiscard]] bool HasTraitsProperty(int n) const override
+       {
+           return (Props & n) != 0;
+       }
 
     // Lifetime management
-    StorageBase *NewStorage(Registry *registry, Handle handle) const {
-        auto result = registry->GetMemorySystem().Allocate<Storage<T> >(
-            ObjectConstructParams(registry, this, handle));
+       StorageBase* NewStorage(Registry* registry, Handle handle) const override
+       {
+           auto result =
+               registry->GetMemorySystem().Allocate<Storage<T>>(ObjectConstructParams(registry, this, handle));
 
-        if (!result.has_value()) return nullptr;
+           if (!result.has_value()) {
+               return nullptr;
+           }
 
-        Storage<T> *born = result.value();
-        born->SetClean();
-        return born;
-    }
+           Storage<T>* born = result.value();
+           born->SetClean();
+           return born;
+       }
 
-    void Create(StorageBase &storage) const {
-        CreateProperties(storage);
-        Traits::LifetimeManager::Create(TypedStorage(storage));
-    }
+       void Create(StorageBase& storage) const override
+       {
+           CreateProperties(storage);
+           Traits::LifetimeManager::Create(TypedStorage(storage));
+       }
 
-    bool Destroy(StorageBase &storage) const {
-        return Traits::LifetimeManager::Destroy(TypedStorage(storage));
-    }
+       bool Destroy(StorageBase& storage) const override
+       {
+           return Traits::LifetimeManager::Destroy(TypedStorage(storage));
+       }
 
-    void Delete(StorageBase &storage) const {
-        if (!properties_.empty()) {
-            for (auto X : properties_) {
-                PropertyBase const &prop = *X.second;
-                if (!prop.IsSystemType()) continue;
+       void Delete(StorageBase& storage) const override
+       {
+           if (!properties_.empty()) {
+               for (auto x : properties_) {
+                   PropertyBase const& prop = *x.second;
+                   if (!prop.IsSystemType()) {
+                       continue;
+                   }
 
-                Object K = prop.GetObject(storage);
-                if (K.Exists()) {
-                    K.RemovedFromContainer(storage);
-                }
-            }
-        }
-        Traits::LifetimeManager::Delete(TypedStorage(storage));
-    }
+                   Object k = prop.GetObject(storage);
+                   if (k.Exists()) {
+                       k.RemovedFromContainer(storage);
+                   }
+               }
+           }
+           Traits::LifetimeManager::Delete(TypedStorage(storage));
+       }
 
     Storage<T> *TypedStorage(StorageBase &storage) const {
         return reinterpret_cast<Storage<T> *>(&storage);
     }
 
-    void CreateProperties(StorageBase &object) const {
+    void CreateProperties(StorageBase& object) const override
+    {
         for (auto property : properties_) {
             PropertyBase const &prop = *property.second;
-            if (!prop.IsSystemType()) continue;
+            if (!prop.IsSystemType()) {
+                continue;
+            }
 
-            if (!prop.CreateDefaultValue()) continue;
+            if (!prop.CreateDefaultValue()) {
+                continue;
+            }
 
             Object value = object.GetRegistry()->NewFromTypeNumber(
                 prop.GetFieldTypeNumber());
@@ -88,11 +107,13 @@ class Class : public ClassBase {
         }
     }
 
-    void Assign(StorageBase &A, StorageBase const &B) const {
-        Traits::Assign::Perform(Deref<T>(A), ConstDeref<T>(B));
+    void Assign(StorageBase& a, StorageBase const& b) const override
+    {
+        Traits::Assign::Perform(Deref<T>(a), ConstDeref<T>(b));
     }
 
-    Object Duplicate(StorageBase const &parent) const {
+    [[nodiscard]] Object Duplicate(StorageBase const& parent) const override
+    {
         Storage<T> *result = parent.GetRegistry()->NewStorage<T>();
         Traits::Assign::Perform(result->GetReference(), ConstDeref<T>(parent));
         // foreach (Properties::value_type const &property, properties_)
@@ -102,154 +123,172 @@ class Class : public ClassBase {
             // value
             if (prop.IsSystemType()) {
                 auto ch = prop.GetObject(parent);
-                if (ch.Exists())
+                if (ch.Exists()) {
                     prop.SetObject(*result, ch.Clone());
-                else
+                } else {
                     prop.SetObject(*result, Object());
-            } else
-                prop.SetValue(*result, prop.GetValue(parent));
+                }
+            } else {
+                {
+                    prop.SetValue(*result, prop.GetValue(parent));
+                }
+            }
         }
         return *result;
     }
 
-    void GetContainedObjects(StorageBase &object, ObjectList &contained) const {
+    void GetContainedObjects(StorageBase& object, ObjectList& contained) const override
+    {
         Traits::ContainerOps::ForEachContained(
             CleanDeref<T>(object), AddContainedFun<T, ObjectList>(contained));
     }
 
-    void SetReferencedObjectsColor(StorageBase &Q, ObjectColor::Color C,
-                                   HandleSet &H) const {
-        ClassBase::SetReferencedObjectsColor(Q, C, H);
-        Traits::ContainerOps::ForEachContained(
-            CleanDeref<T>(Q), SetObjectColorRecursive<T>(C, H));
+    void SetReferencedObjectsColor(StorageBase& q, ObjectColor::Color c, HandleSet& h) const override
+    {
+        ClassBase::SetReferencedObjectsColor(q, c, h);
+        Traits::ContainerOps::ForEachContained(CleanDeref<T>(q), SetObjectColorRecursive<T>(c, h));
     }
 
-    void SetSwitch(StorageBase &Q, int S, bool M) const {
-        Traits::ContainerOps::SetSwitch(CleanDeref<T>(Q), S, M);
+    void SetSwitch(StorageBase& q, int s, bool m) const override
+    {
+        Traits::ContainerOps::SetSwitch(CleanDeref<T>(q), s, m);
     }
 
-    void DetachFromContainer(StorageBase &Q, Object const &K) const {
-        Traits::ContainerOps::Erase(Deref<T>(Q), K);
+    void DetachFromContainer(StorageBase& q, Object const& k) const override
+    {
+        Traits::ContainerOps::Erase(Deref<T>(q), k);
     }
 
-    void SetMarked2(StorageBase &Q, bool M) const {
-        Traits::ContainerOps::SetMarked(CleanDeref<T>(Q), M);
+    void SetMarked2(StorageBase& q, bool m) const override
+    {
+        Traits::ContainerOps::SetMarked(CleanDeref<T>(q), m);
     }
-    void MakeReachableGrey(StorageBase &base) const {
+    void MakeReachableGrey(StorageBase& base) const override
+    {
         ClassBase::MakeReachableGrey(base);
         Traits::ContainerOps::ForEachContained(CleanDeref<T>(base),
                                                MakeReachableGreyFun<T>());
     }
 
-    Object UpCast(StorageBase &Q) const {
+    Object UpCast(StorageBase& q) const override
+    {
         // This is almost always a bad idea. I see no reason to allow it in KAI
         // as well.
         KAI_NOT_IMPLEMENTED();
     }
 
-    Object CrossCast(StorageBase &, Type::Number) const {
+    Object CrossCast(StorageBase& /*unused*/, Type::Number /*unused*/) const override
+    {
         KAI_NOT_IMPLEMENTED();
     }
 
-    Object DownCast(StorageBase &, Type::Number) const {
+    Object DownCast(StorageBase& /*unused*/, Type::Number /*unused*/) const override
+    {
         KAI_NOT_IMPLEMENTED();
     }
 
-    HashValue GetHashValue(const StorageBase &Q) const {
-        return Traits::HashFunction::Calc(ConstDeref<T>(Q));
+    [[nodiscard]] HashValue GetHashValue(const StorageBase& q) const override
+    {
+        return Traits::HashFunction::Calc(ConstDeref<T>(q));
     }
 
-    Object Absolute(const StorageBase &object) const {
+    [[nodiscard]] Object Absolute(const StorageBase& object) const override
+    {
         Object result = object.Clone();
         Traits::Absolute::Perform(Deref<T>(object));
         return result;
     }
 
-    bool Boolean(const StorageBase &A) const {
-        return Traits::Boolean::Perform(ConstDeref<T>(A));
+    [[nodiscard]] bool Boolean(const StorageBase& a) const override
+    {
+        return Traits::Boolean::Perform(ConstDeref<T>(a));
     }
 
-    bool Less(const StorageBase &A, const StorageBase &B) const {
-        return Traits::Less::Perform(ConstDeref<T>(A), ConstDeref<T>(B));
+    [[nodiscard]] bool Less(const StorageBase& a, const StorageBase& b) const override
+    {
+        return Traits::Less::Perform(ConstDeref<T>(a), ConstDeref<T>(b));
     }
 
-    bool Equiv(const StorageBase &A, const StorageBase &B) const {
-        if (!HasTraitsProperty(Type::Properties::Equiv) &&
-            HasTraitsProperty(Type::Properties::Less))
-            return !Less(A, B) && !Less(B, A);
-        return Traits::Equiv::Perform(ConstDeref<T>(A), ConstDeref<T>(B));
+    [[nodiscard]] bool Equiv(const StorageBase& a, const StorageBase& b) const override
+    {
+        if (!HasTraitsProperty(Type::Properties::Equiv) && HasTraitsProperty(Type::Properties::Less)) {
+            return !Less(a, b) && !Less(b, a);
+        }
+        return Traits::Equiv::Perform(ConstDeref<T>(a), ConstDeref<T>(b));
     }
 
-    bool Greater(const StorageBase &A, const StorageBase &B) const {
-        return Traits::Greater::Perform(ConstDeref<T>(A), ConstDeref<T>(B));
+    [[nodiscard]] bool Greater(const StorageBase& a, const StorageBase& b) const override
+    {
+        return Traits::Greater::Perform(ConstDeref<T>(a), ConstDeref<T>(b));
     }
 
-    StorageBase *Plus(StorageBase const &A, StorageBase const &B) const {
-        Storage<T> *R = A.GetRegistry()->NewStorage<T>();
-        Traits::Assign::Perform(
-            R->GetReference(),
-            Traits::Plus::Perform(ConstDeref<T>(A), ConstDeref<T>(B)));
-        return R;
+    [[nodiscard]] StorageBase* Plus(StorageBase const& a, StorageBase const& b) const override
+    {
+        Storage<T>* r = a.GetRegistry()->NewStorage<T>();
+        Traits::Assign::Perform(r->GetReference(), Traits::Plus::Perform(ConstDeref<T>(a), ConstDeref<T>(b)));
+        return r;
     }
-    StorageBase *Minus(StorageBase const &A, StorageBase const &B) const {
-        Storage<T> *R = A.GetRegistry()->NewStorage<T>();
-        Traits::Assign::Perform(
-            R->GetReference(),
-            Traits::Minus::Perform(ConstDeref<T>(A), ConstDeref<T>(B)));
-        return R;
+    [[nodiscard]] StorageBase* Minus(StorageBase const& a, StorageBase const& b) const override
+    {
+        Storage<T>* r = a.GetRegistry()->NewStorage<T>();
+        Traits::Assign::Perform(r->GetReference(), Traits::Minus::Perform(ConstDeref<T>(a), ConstDeref<T>(b)));
+        return r;
     }
 
-    StorageBase *Multiply(StorageBase const &A, StorageBase const &B) const {
-        Storage<T> *R = A.GetRegistry()->NewStorage<T>();
-        Traits::Assign::Perform(
-            R->GetReference(),
-            Traits::Multiply::Perform(ConstDeref<T>(A), ConstDeref<T>(B)));
-        return R;
+    [[nodiscard]] StorageBase* Multiply(StorageBase const& a, StorageBase const& b) const override
+    {
+        Storage<T>* r = a.GetRegistry()->NewStorage<T>();
+        Traits::Assign::Perform(r->GetReference(), Traits::Multiply::Perform(ConstDeref<T>(a), ConstDeref<T>(b)));
+        return r;
     }
 
-    StorageBase *Divide(StorageBase const &A, StorageBase const &B) const {
-        Storage<T> *R = A.GetRegistry()->NewStorage<T>();
-        Traits::Assign::Perform(
-            R->GetReference(),
-            Traits::Divide::Perform(ConstDeref<T>(A), ConstDeref<T>(B)));
-        return R;
+    [[nodiscard]] StorageBase* Divide(StorageBase const& a, StorageBase const& b) const override
+    {
+        Storage<T>* r = a.GetRegistry()->NewStorage<T>();
+        Traits::Assign::Perform(r->GetReference(), Traits::Divide::Perform(ConstDeref<T>(a), ConstDeref<T>(b)));
+        return r;
     }
 
-    void Insert(StringStream &S, const StorageBase &Q) const {
-        Traits::StringStreamInsert::Insert(S, ConstDeref<T>(Q));
+    void Insert(StringStream& s, const StorageBase& q) const override
+    {
+        Traits::StringStreamInsert::Insert(s, ConstDeref<T>(q));
     }
 
-    StorageBase *Extract(Registry &R, StringStream &S) const {
-        Storage<T> *Q = R.NewStorage<T>();
-        Traits::StringStreamExtract::Extract(S, Q->GetReference());
-        return Q;
+    StorageBase* Extract(Registry& r, StringStream& s) const override
+    {
+        Storage<T>* q = r.NewStorage<T>();
+        Traits::StringStreamExtract::Extract(s, q->GetReference());
+        return q;
     }
 
-    void ExtractValue(Object &object, StringStream &strstream) const {
+    void ExtractValue(Object& object, StringStream& strstream) const override
+    {
         Traits::StringStreamExtract::Extract(strstream, Deref<T>(object));
     }
 
-    void Insert(BinaryStream &S, const StorageBase &Q) const {
-        Traits::BinaryStreamInsert::Insert(S, ConstDeref<T>(Q));
+    void Insert(BinaryStream& s, const StorageBase& q) const override
+    {
+        Traits::BinaryStreamInsert::Insert(s, ConstDeref<T>(q));
     }
 
-    StorageBase *Extract(Registry &R, BinaryStream &S) const {
-        Value<T> Q = R.New<T>();
-        Traits::BinaryPacketExtract::Extract(S, *Q);
-        return &Q.GetObject().GetStorageBase();
+    StorageBase* Extract(Registry& r, BinaryStream& s) const override
+    {
+        Value<T> q = r.New<T>();
+        Traits::BinaryPacketExtract::Extract(s, *q);
+        return &q.GetObject().GetStorageBase();
     }
 };
 
-template <class T>
-Pointer<ClassBase const *> NewClass(Registry &R, const Label &name) {
+template <class T> Pointer<ClassBase const*> NewClass(Registry& r, const Label& name)
+{
     auto klass = new Class<T>(name);
-    return R.AddClass(Type::Traits<T>::Number, klass);
+    return r.AddClass(Type::Traits<T>::Number, klass);
 }
 
-template <class T>
-Storage<T> *Clone(StorageBase const &Q) {
-    auto dup = Q.GetRegistry()->NewStorage<T>();
-    dup->GetClass()->Clone(*dup, Q);
+template <class T> Storage<T>* Clone(StorageBase const& q)
+{
+    auto dup = q.GetRegistry()->NewStorage<T>();
+    dup->GetClass()->Clone(*dup, q);
     return dup;
 }
 

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/BuiltinTypes/Signed32.h>
 #include <KAI/Core/Exception.h>
@@ -13,59 +13,91 @@ KAI_BEGIN
 /// This is the base class for all mappings.
 template <class Map>
 struct MapBase : Container<Map> {
-    typedef typename Map::const_iterator const_iterator;
-    typedef typename Map::iterator iterator;
-    typedef MapBase<Map> This;
+    using const_iterator = typename Map::const_iterator;
+    using iterator = typename Map::iterator;
+    using This = MapBase<Map>;
 
-   private:
-    Map map;
+private:
+    Map map_;
 
-   public:
-    iterator begin() { return map.begin(); }
-    iterator end() { return map.end(); }
+public:
+    iterator Begin()
+    {
+        return map_.begin();
+    }
+    iterator End()
+    {
+        return map_.end();
+    }
 
-    const_iterator begin() const { return map.begin(); }
-    const_iterator end() const { return map.end(); }
+    [[nodiscard]] const_iterator Begin() const
+    {
+        return map_.begin();
+    }
+    [[nodiscard]] const_iterator End() const
+    {
+        return map_.end();
+    }
 
-    iterator Begin() { return map.begin(); }
-    iterator End() { return map.end(); }
-    const_iterator Begin() const { return map.begin(); }
-    const_iterator End() const { return map.end(); }
-    int Size() const { return (int)map.size(); }
-    bool Empty() const { return map.empty(); }
-    void Clear() { map.clear(); }
-    void Insert(Object const &key, Object const &value) { map[key] = value; }
-    bool ContainsKey(Object const &k) const { return Find(k) != End(); }
-    const_iterator Find(Object const &k) const { return map.find(k); }
+    [[nodiscard]] int Size() const
+    {
+        return (int) map_.size();
+    }
+    [[nodiscard]] bool Empty() const
+    {
+        return map_.empty();
+    }
+    void Clear() {
+        map_.clear();
+    }
+    void Insert(Object const &key, Object const &value) {
+        map_[key] = value;
+    }
+    [[nodiscard]] bool ContainsKey(Object const& k) const
+    {
+        return Find(k) != End();
+    }
+    [[nodiscard]] const_iterator Find(Object const& k) const
+    {
+        return map_.find(k);
+    }
 
     void Erase(Object const &key) {
-        iterator A = map.find(key);
-        if (A == map.end()) KAI_THROW_1(UnknownKey, key);
-        A->first.SetColor(ObjectColor::White);
-        A->second.SetColor(ObjectColor::White);
-        map.erase(A);
+        iterator a = map_.find(key);
+        if (a == map_.end()) {
+            KAI_THROW_1(UnknownKey, key);
+        }
+        a->first.SetColor(ObjectColor::White);
+        a->second.SetColor(ObjectColor::White);
+        map_.erase(a);
     }
 
-    Object GetValue(Object const &key) const {
-        const_iterator A = map.find(key);
-        if (A == map.end()) return Object();  // KAI_THROW_1(UnknownKey, key);
-        return A->second;
+    [[nodiscard]] Object GetValue(Object const& key) const
+    {
+        const_iterator a = map_.find(key);
+        if (a == map_.end()) {
+            return {}; // KAI_THROW_1(UnknownKey, key);
+        }
+        return a->second;
     }
 
-    void SetChildSwitch(int S, bool M) {
-        for (auto const &X : map) {
-            const_cast<Object &>(X.first).SetSwitch(S, M);
-            X.second.SetSwitch(S, M);
+    void SetChildSwitch(int s, bool m)
+    {
+        for (auto const& x : map_) {
+            const_cast<Object&>(x.first).SetSwitch(s, m);
+            x.second.SetSwitch(s, m);
         }
     }
 
     // friend bool operator<(const This &A, const This &B) { return A.map <
     // B.map; }
-    friend bool operator==(const This &A, const This &B) {
-        return A.map == B.map;
+    friend bool operator==(const This& a, const This& b)
+    {
+        return a.map_ == b.map_;
     }
 
-    static void Register(Registry &R, const char *N) {
+    static void Register(Registry& r, const char* n)
+    {
         // TODO: Fix const correctness issues with Map methods
         // ClassBuilder<This>(R, Label(N))
         //    .Methods
@@ -79,19 +111,24 @@ struct MapBase : Container<Map> {
     }
 };
 
-template <class Map>
-StringStream &operator<<(StringStream &S, MapBase<Map> const &M) {
-    S << "{ ";
+template <class Map> inline typename MapBase<Map>::iterator begin(MapBase<Map> &m) { return m.Begin(); }
+template <class Map> inline typename MapBase<Map>::iterator end(MapBase<Map> &m) { return m.End(); }
+template <class Map> inline typename MapBase<Map>::const_iterator begin(MapBase<Map> const &m) { return m.Begin(); }
+template <class Map> inline typename MapBase<Map>::const_iterator end(MapBase<Map> const &m) { return m.End(); }
+
+template <class Map> StringStream& operator<<(StringStream& s, MapBase<Map> const& m)
+{
+    s << "{ ";
     const char *sep = "";
-    for (auto const &A : M) {
-        S << sep << "[" << A.first << ", " << A.second << "]";
+    for (auto const& a : m) {
+        s << sep << "[" << a.first << ", " << a.second << "]";
         sep = ", ";
     }
-    return S << " }";
+    return s << " }";
 }
 
-template <class Map>
-StringStream &operator>>(StringStream &S, MapBase<Map> const &M) {
+template <class Map> StringStream& operator>>(StringStream& s, MapBase<Map> const& m)
+{
     // S << "{ ";
     // const char *sep = "";
     // for (auto const &A : M)
@@ -104,25 +141,26 @@ StringStream &operator>>(StringStream &S, MapBase<Map> const &M) {
     KAI_NOT_IMPLEMENTED();
 }
 
-template <class Map>
-BinaryStream &operator<<(BinaryStream &S, MapBase<Map> const &M) {
-    S << M.Size();
-    for (const auto &A : M) {
-        S << A.first << A.second;
+template <class Map> BinaryStream& operator<<(BinaryStream& s, MapBase<Map> const& m)
+{
+    s << m.Size();
+    for (const auto& a : m) {
+        s << a.first << a.second;
     }
-    return S;
+    return s;
 }
 
-template <class Map>
-BinaryStream &operator>>(BinaryStream &S, MapBase<Map> &M) {
+template <class Map> BinaryStream& operator>>(BinaryStream& s, MapBase<Map>& m)
+{
     int length = 0;
-    S >> length;
-    for (int N = 0; N < length; ++N) {
-        Object key, value;
-        S >> key >> value;
-        M.Insert(key, value);
+    s >> length;
+    for (int n = 0; n < length; ++n) {
+        Object key;
+        Object value;
+        s >> key >> value;
+        m.Insert(key, value);
     }
-    return S;
+    return s;
 }
 
 KAI_END

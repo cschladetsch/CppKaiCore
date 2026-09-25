@@ -11,11 +11,10 @@ struct FileLocation {
     int line;
 
     FileLocation() : line(0) {}
-    FileLocation(const char *F, int L, const char *G = "")
-        : file(F), line(L), function(G) {}
-    FileLocation(const char *G) : function(G), line(0) {}
+    FileLocation(const char* f, int l, const char* g = "") : file(f), line(l), function(g) {}
+    FileLocation(const char* g) : function(g), line(0) {}
 
-    String ToString() const;
+    [[nodiscard]] String ToString() const;
     void AddLocation(StringStream &) const;
     void AddFunction(StringStream &) const;
 };

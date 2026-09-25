@@ -1,4 +1,4 @@
-#include "KAI/Core/BuiltinTypes.h"
+﻿#include "KAI/Core/BuiltinTypes.h"
 
 #include "KAI/Core/Exception.h"
 #include "KAI/Core/FunctionBase.h"
@@ -14,7 +14,7 @@ StringStream &operator>>(StringStream &S, float &F) {
 /* TODO WTF
 StringStream &operator<<(StringStream &S, const BasePointerBase &B)
 {
-    B.Self->GetClass()->Insert(S, *B.Self);
+    B.self->GetClass()->Insert(S, *B.self);
     return S;
 }
 */
@@ -25,21 +25,21 @@ void BasePointerBase::Register(Registry &R) {
 
 void Handle::Register(Registry &R) {
     ClassBuilder<Handle>(R, Label("Handle"))
-        .Methods("GetValue", &Handle::GetValue);
+        .methods("GetValue", &Handle::GetValue);
 }
 
 void Pair::Register(Registry &R) {
-    ClassBuilder<Pair>(R, "Pair").Methods.Properties("first", &Pair::first)(
+    ClassBuilder<Pair>(R, "Pair").methods.properties("first", &Pair::first)(
         "second", &Pair::second);
 }
 
 void FileLocation::AddLocation(StringStream &str) const {
     // Always include file location information, regardless of TraceFileLocation
     // setting This ensures __FILE__ and __LINE__ always appear in log messages
-    std::string loc = file.c_str();
+    std::string loc = file.CStr();
 
     // Only strip path if that setting is enabled
-    if (debug::Trace::StripPath) {
+    if (debug::Trace::stripPath) {
         // Handle both forward and backslashes (Unix and Windows paths)
         size_t lastSlash = loc.find_last_of('/');
         size_t lastBackslash = loc.find_last_of('\\');
@@ -75,7 +75,7 @@ void FileLocation::AddLocation(StringStream &str) const {
 }
 
 void FileLocation::AddFunction(StringStream &str) const {
-    if (debug::Trace::TraceFunction && !function.Empty())
+    if (debug::Trace::traceFunction && !function.Empty())
         str << function << ": ";
 }
 
@@ -102,27 +102,27 @@ void WriteArgumentList(StringStream &S,
 
 String MethodBase::ToString() const {
     StringStream S;
-    S << return_type.ToString() << String(" ") << class_type.ToString()
-      << String("::") << name;
-    WriteArgumentList<MethodBase>(S, arguments);
+    S << returnType_.ToString() << String(" ") << classType.ToString()
+      << String("::") << name_;
+    WriteArgumentList<MethodBase>(S, arguments_);
 
     if (constness == Constness::Const)
         S << " const;";
     else
         S << ";";
 
-    if (!Description.Empty()) S << " /* " << Description << " */";
+    if (!description.Empty()) S << " /* " << description << " */";
 
     return S.ToString();
 }
 
 String FunctionBase::ToString() const {
     StringStream S;
-    S << return_type.ToString() << " " << name;
-    WriteArgumentList<FunctionBase>(S, arguments);
+    S << returnType_.ToString() << " " << name_;
+    WriteArgumentList<FunctionBase>(S, arguments_);
     S << ";";
 
-    if (!Description.Empty()) S << " /* " << Description << " */";
+    if (!description.Empty()) S << " /* " << description << " */";
 
     return S.ToString();
 }
@@ -139,7 +139,7 @@ StringStream &operator<<(StringStream &S, int N) {
 StringStream &operator>>(StringStream &S, int &N) {
     String T;
     S >> T;
-    N = atoi(T.c_str());
+    N = atoi(T.CStr());
     return S;
 }
 

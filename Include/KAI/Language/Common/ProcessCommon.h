@@ -17,11 +17,11 @@ struct ProcessCommon : Process {
         return reg_->New<T>(val);
     }
 
-    ProcessCommon() {}
+    ProcessCommon() = default;
     ProcessCommon(Registry &r) : reg_(&r) {}
 
    protected:
-    Registry *reg_ = 0;
+       Registry* reg_ = nullptr;
 };
 
 KAI_END

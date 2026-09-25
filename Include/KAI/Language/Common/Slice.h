@@ -10,18 +10,22 @@ struct Slice {
     int Start, End;
 
     Slice() { Start = End = 0; }
-    Slice(int start, int end) {
-        Start = start;
-        End = end;
+    Slice(int start, int end) : Start(start), End(end) {}
+
+    [[nodiscard]] int Length() const
+    {
+        return End - Start;
     }
 
-    int Length() const { return End - Start; }
-
-    friend bool operator==(Slice const &A, Slice const &B) {
-        return A.Start == B.Start && A.End == B.End;
+    friend bool operator==(Slice const& a, Slice const& b)
+    {
+        return a.Start == b.Start && a.End == b.End;
     }
 
-    friend bool operator!=(Slice const &A, Slice const &B) { return !(A == B); }
+    friend bool operator!=(Slice const& a, Slice const& b)
+    {
+        return !(a == b);
+    }
 };
 
 KAI_END

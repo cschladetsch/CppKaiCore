@@ -7,20 +7,19 @@ KAI_BEGIN
 
 struct Vector2 {
     Vector2() : x(0), y(0) {}
-    Vector2(float _x, float _y) : x(_x), y(_y) {}
+    Vector2(float x, float y) : x(x), y(y) {}
     float x, y;
 };
 
 struct Vector3 {
     Vector3() : x(0), y(0), z(0) {}
-    Vector3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
+    Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
     float x, y, z;
 };
 
 struct Vector4 {
     Vector4() : x(0), y(0), z(0), w(0) {}
-    Vector4(float _x, float _y, float _z, float _w)
-        : x(_x), y(_y), z(_z), w(_w) {}
+    Vector4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
     float x, y, z, w;
     Vector4 &operator*=(float a) {
         x *= a;
@@ -36,39 +35,45 @@ struct Vector4 {
         w /= a;
         return *this;
     }
-    Vector4 &operator+=(Vector4 const &R) {
-        x += R.x;
-        y += R.y;
-        z += R.z;
-        w += R.z;
+    Vector4& operator+=(Vector4 const& r)
+    {
+        x += r.x;
+        y += r.y;
+        z += r.z;
+        w += r.z;
         return *this;
     }
-    Vector4 &operator-=(Vector4 const &R) {
-        x -= R.x;
-        y -= R.y;
-        z -= R.z;
-        w -= R.w;
+    Vector4& operator-=(Vector4 const& r)
+    {
+        x -= r.x;
+        y -= r.y;
+        z -= r.z;
+        w -= r.w;
         return *this;
     }
-    friend Vector4 operator*(Vector4 const &A, float B) {
-        Vector4 R(A);
-        R *= B;
-        return R;
+    friend Vector4 operator*(Vector4 const& a, float b)
+    {
+        Vector4 r(a);
+        r *= b;
+        return r;
     }
-    friend Vector4 operator/(Vector4 const &A, float B) {
-        Vector4 R(A);
-        R /= B;
-        return R;
+    friend Vector4 operator/(Vector4 const& a, float b)
+    {
+        Vector4 r(a);
+        r /= b;
+        return r;
     }
-    friend Vector4 operator+(Vector4 const &A, Vector4 const &B) {
-        Vector4 R(A);
-        R += B;
-        return R;
+    friend Vector4 operator+(Vector4 const& a, Vector4 const& b)
+    {
+        Vector4 r(a);
+        r += b;
+        return r;
     }
-    friend Vector4 operator-(Vector4 const &A, Vector4 const &B) {
-        Vector4 R(A);
-        R -= B;
-        return R;
+    friend Vector4 operator-(Vector4 const& a, Vector4 const& b)
+    {
+        Vector4 r(a);
+        r -= b;
+        return r;
     }
 };
 

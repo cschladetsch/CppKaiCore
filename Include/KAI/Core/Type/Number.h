@@ -72,13 +72,28 @@ struct Number {
     Value value;
 
     Number() : value(None) {}
-    Number(int N) : value(Value(N)) {}
-    friend bool operator<(Number A, Number B) { return A.value < B.value; }
-    friend bool operator==(Number A, Number B) { return A.value == B.value; }
-    friend bool operator!=(Number A, Number B) { return A.value != B.value; }
-    std::string ToString() const;
-    int ToInt() const { return (int)value; }
-    int GetValue() const { return (int)value; }
+    Number(int n) : value(Value(n)) {}
+    friend bool operator<(Number a, Number b)
+    {
+        return a.value < b.value;
+    }
+    friend bool operator==(Number a, Number b)
+    {
+        return a.value == b.value;
+    }
+    friend bool operator!=(Number a, Number b)
+    {
+        return a.value != b.value;
+    }
+    [[nodiscard]] std::string ToString() const;
+    [[nodiscard]] int ToInt() const
+    {
+        return static_cast<int>(value);
+    }
+    [[nodiscard]] int GetValue() const
+    {
+        return static_cast<int>(value);
+    }
 };
 
 KAI_TYPE_END
@@ -90,7 +105,7 @@ KAI_BEGIN
 //    BinaryStream &operator<<(BinaryStream &, Type::Number);
 //    BinaryStream &operator>>(BinaryStream &, Type::Number &);
 
-typedef int TypeNumber;
+using TypeNumber = int;
 
 // struct HashType
 //{

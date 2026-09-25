@@ -9,10 +9,10 @@
 KAI_BEGIN
 
 struct FunctionBase : CallableBase<FunctionBase> {
-    FunctionBase(const Label &L) : CallableBase<FunctionBase>(L) {}
+    FunctionBase(const Label& l) : CallableBase<FunctionBase>(l) {}
 
     virtual void Invoke(Registry &, Stack &stack) = 0;
-    String ToString() const;
+    [[nodiscard]] String ToString() const;
     static void Register(Registry &);
 };
 

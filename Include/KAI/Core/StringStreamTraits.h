@@ -1,4 +1,4 @@
-#include <KAI/Core/Base.h>
+﻿#include <KAI/Core/Base.h>
 #include <KAI/Core/FwdDeclarations.h>
 
 KAI_BEGIN
@@ -8,7 +8,7 @@ inline StringStream &operator<<(StringStream &S, const String::Char c) {
     return S;
 }
 
-inline StringStream &operator<<(StringStream &S, const Exception::Base &E) {
+inline StringStream &operator<<(StringStream &S, const exception::Base &E) {
     return S << E.ToString().c_str();
 }
 

@@ -8,12 +8,12 @@
 KAI_BEGIN
 
 struct ObjectConstructParams {
-    const ClassBase *class_base;
+    const ClassBase* classBase;
     Registry *registry;
     Handle handle;
     Constness constness;
 
-    ObjectConstructParams() : class_base(0), registry(0) {}
+    ObjectConstructParams() : classBase(nullptr), registry(nullptr) {}
     ObjectConstructParams(Registry *, const ClassBase *, Handle,
                           Constness = Constness::Mutable);
     ObjectConstructParams(const Object &, Constness);

@@ -12,10 +12,10 @@ struct Process {
     virtual ~Process() = default;
     static int trace;
 
-    mutable bool Failed = false;
-    mutable std::string Error;
+    mutable bool failed = false;
+    mutable std::string error;
 
-   protected:
+protected:
     bool Fail(const char *fmt, ...) const;
     bool Fail(const std::string &) const;
 

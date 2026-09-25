@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <KAI/Core/Config/Base.h>
 
@@ -11,7 +11,7 @@
 
 KAI_BEGIN
 
-namespace Memory {
+namespace memory {
 /// Standard allocator using modern C++ memory management
 struct StandardAllocator : BaseAllocator {
     using BaseAllocator::alloc;
@@ -30,6 +30,6 @@ struct StandardAllocator : BaseAllocator {
         std::allocator<std::byte>{}.deallocate(static_cast<std::byte *>(P), N);
     }
 };
-}  // namespace Memory
+}  // namespace memory
 
 KAI_END

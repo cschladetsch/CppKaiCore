@@ -6,20 +6,20 @@ KAI_BEGIN
 
 template <class EParser>
 struct TranslatorBase : TranslatorCommon {
-    typedef EParser Parser;
-    typedef typename Parser::TokenNode TokenNode;
-    typedef typename TokenNode::Enum TokenEnum;
-    typedef typename Parser::Lexer Lexer;
-    typedef typename Parser::AstNode AstNode;
-    typedef typename AstNode::Enum AstEnum;
-    typedef typename Parser::AstNodePtr AstNodePtr;
+    using Parser = EParser;
+    using TokenNode = typename Parser::TokenNode;
+    using TokenEnum = typename TokenNode::Enum;
+    using Lexer = typename Parser::Lexer;
+    using AstNode = typename Parser::AstNode;
+    using AstEnum = typename AstNode::Enum;
+    using AstNodePtr = typename Parser::AstNodePtr;
 
     TranslatorBase(const TranslatorBase &) = delete;
     TranslatorBase(Registry &reg) : TranslatorCommon(reg) {}
 
-    virtual Pointer<Continuation> Translate(const char *text,
-                                            Structure st) override {
-        if (text == 0 || text[0] == 0) {
+    Pointer<Continuation> Translate(const char* text, Structure st) override
+    {
+        if (text == nullptr || text[0] == 0) {
             KAI_TRACE_WARN_1("No input");
             return Object();
         }
@@ -33,30 +33,38 @@ struct TranslatorBase : TranslatorCommon {
             return Object();
         }
 
-        if (lex->Failed) {
+        if (lex->failed) {
             KAI_TRACE_WARN_1(lex->Error);
-            Fail(lex->Error);
+            Fail(lex->error);
             return Object();
         }
 
-        if (trace > 0) KAI_TRACE_1(lex->Print());
+        if (trace > 0) {
+            KAI_TRACE_1(lex->Print());
+        }
 
         auto parse = std::make_shared<Parser>(*reg_);
         parse->Process(lex, st);
-        if (parse->Failed) {
-            if (trace > 1) KAI_TRACE_1(parse->PrintTree());
+        if (parse->failed) {
+            if (trace > 1) {
+                KAI_TRACE_1(parse->PrintTree());
+            }
 
-            Fail(parse->Error);
+            Fail(parse->error);
             return Object();
         }
 
-        if (trace > 1) KAI_TRACE_1(parse->PrintTree());
+        if (trace > 1) {
+            KAI_TRACE_1(parse->PrintTree());
+        }
 
         PushNew();
 
         TranslateNode(parse->GetRoot());
 
-        if (stack.empty()) KAI_THROW_0(EmptyStack);
+        if (stack_.empty()) {
+            KAI_THROW_0(EmptyStack);
+        }
 
         auto cont = Pop();
 
@@ -87,7 +95,9 @@ struct TranslatorBase : TranslatorCommon {
         try {
             TranslateNode(p);
         } catch (Exception &) {
-            if (!Failed) Fail("Failed");
+            if (!failed) {
+                Fail("Failed");
+            }
         }
     }
 };

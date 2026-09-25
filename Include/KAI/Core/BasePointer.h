@@ -8,18 +8,22 @@ KAI_BEGIN
 
 template <class T>
 struct BasePointer : BasePointerBase, FwdBasePointer<T> {
-    typedef T Base;
-    typedef typename Type::Traits<Base> BaseTraits;
+    using Base = T;
+    using BaseTraits = typename Type::Traits<Base>;
     std::shared_ptr<Base> base;
 
-    BasePointer(Base *P = 0) : base(P) {}
+    BasePointer(Base* p = 0) : base(p) {}
 
-    Base *GetBase() const { return &*base; }
+    [[nodiscard]] Base* GetBase() const
+    {
+        return &*base;
+    }
     Base *operator->() const { return GetBase(); }
     Base &operator*() const { return *GetBase(); }
 
-    static void Register(Registry &R) {
-        KAI_UNUSED(R);
+    static void Register(Registry& r)
+    {
+        KAI_UNUSED(r);
 
         /* MUSTFIX
         ClassBuilder<BasePointer<T> >(R, String("BasePointer"))

@@ -1,4 +1,4 @@
-#include <KAI/Console/ConsoleColor.h>
+﻿#include <KAI/Console/ConsoleColor.h>
 #include <KAI/Core/Config/Base.h>
 #include <KAI/Core/Debug.h>
 #include <KAI/Core/Exception.h>
@@ -22,20 +22,20 @@ StringStream& operator<<(StringStream& s, const Structure& st) {
 ostream& operator<<(ostream& S, ConsoleColor::EType type) { return S; }
 
 namespace debug {
-bool Trace::TraceFileLocation = true;  // Always show file and line information
-bool Trace::StripPath = true;
-bool Trace::TraceFunction = false;
+bool Trace::traceFileLocation = true;  // Always show file and line information
+bool Trace::stripPath = true;
+bool Trace::traceFunction = false;
 
 void MaxTrace() {
-    Trace::TraceFileLocation = true;
-    Trace::StripPath = false;
-    Trace::TraceFunction = true;
+    Trace::traceFileLocation = true;
+    Trace::stripPath = false;
+    Trace::traceFunction = true;
 }
 
 void MinTrace() {
-    Trace::TraceFileLocation = true;
-    Trace::StripPath = true;
-    Trace::TraceFunction = true;
+    Trace::traceFileLocation = true;
+    Trace::stripPath = true;
+    Trace::traceFunction = true;
 }
 
 StringStream& Trace::operator<<(Object const& obj) {
@@ -83,13 +83,13 @@ Trace::~Trace() {
 
     // Create formatted message
     std::string logMessage;
-    if (TraceFileLocation) {
-        logMessage = file_location.ToString().c_str();
+    if (traceFileLocation) {
+        logMessage = fileLocation.ToString().StdString();
         logMessage += " ";
     }
     // Don't add the log level to the message as Logger will do this
     // automatically
-    logMessage += val.c_str();
+    logMessage += val.CStr();
 
     // Log using the centralized Logger
     Logger::Log(TraceTypeToLoggerLevel(type), logMessage);

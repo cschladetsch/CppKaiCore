@@ -1,4 +1,4 @@
-#include <KAI/Core/BuiltinTypes/Signed32.h>
+﻿#include <KAI/Core/BuiltinTypes/Signed32.h>
 #include <KAI/Core/Memory/StandardAllocator.h>
 #include <KAI/Core/Object/Class.h>
 #include <KAI/Core/Object/IObject.h>
@@ -136,7 +136,7 @@ void Registry::DestroyObject(Handle handle, bool force) {
             pinned_.erase(pin);
 
         succeeded = true;
-    } catch (const Exception::Base &e) {
+    } catch (const exception::Base &e) {
         KAI_TRACE_ERROR() << "Exception during object destruction: "
                           << e.ToString();
         // Log error but attempt recovery below

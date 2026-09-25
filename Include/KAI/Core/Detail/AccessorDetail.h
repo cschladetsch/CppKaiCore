@@ -15,75 +15,90 @@ namespace property_detail {
 // T>, or a Value<T> or Value<const T>
 template <class Base, class C, class T, class F>
 struct CommonBase : Base {
-    typedef F Field;
+    using Field = F;
     Field field;
-    CommonBase(Field G, Label L, bool B, MemberCreateParams::Enum createParams)
-        : Base(L, Type::Traits<C>::Number, Type::Traits<T>::Number, B,
-               createParams),
-          field(G) {}
+    CommonBase(Field g, Label l, bool b, member_create_params::Enum createParams)
+        : Base(l, Type::Traits<C>::Number, Type::Traits<T>::Number, b, createParams), field(g)
+    {
+    }
 };
 
 // common functionality for accessors and mutators of non-system types.
 template <class Base, class C, class T, class F>
 struct NonSystemProperty : CommonBase<Base, C, T, F> {
-    typedef CommonBase<Base, C, T, F> Parent;
+    using Parent = CommonBase<Base, C, T, F>;
     using typename Parent::Field;
 
-    NonSystemProperty(Field G, Label const &L,
-                      MemberCreateParams::Enum createParams)
-        : CommonBase<Base, C, T, F>(G, L, false, createParams) {}
+    NonSystemProperty(Field g, Label const& l, member_create_params::Enum createParams)
+        : CommonBase<Base, C, T, F>(g, l, false, createParams)
+    {
+    }
 
     // cannot get or set the property object for non-system types
-    Object GetObject(Object const &) const { KAI_THROW_0(NoOperation); }
-    void SetObject(Object const &, Object const &) const {
+    [[nodiscard]] Object GetObject(Object const& /*unused*/) const
+    {
+        KAI_THROW_0(NoOperation);
+    }
+    void SetObject(Object const& /*unused*/, Object const& /*unused*/) const
+    {
         KAI_THROW_0(NoOperation);
     }
 
     // non-system types cannot be marked
-    void SetMarked(Object &, bool) {}
+    void SetMarked(Object& /*unused*/, bool /*unused*/) {}
 };
 
 // common functionality for accessors and mutators of properties_ which are
 // system types.
 template <class Base, class C, class T, class F>
 struct SystemProperty : CommonBase<Base, C, T, F> {
-    typedef CommonBase<Base, C, T, F> Parent;
+    using Parent = CommonBase<Base, C, T, F>;
     using Parent::field;
     using typename Parent::Field;
 
-    SystemProperty(Field field, Label const &L,
-                   MemberCreateParams::Enum createParams)
-        : CommonBase<Base, C, T, F>(field, L, true, createParams) {}
+    SystemProperty(Field field, Label const& l, member_create_params::Enum createParams)
+        : CommonBase<Base, C, T, F>(field, l, true, createParams)
+    {
+    }
 
-    Object GetObject(Object const &Q) const { return Deref<C>(Q).*field; }
+    [[nodiscard]] Object GetObject(Object const& q) const
+    {
+        return Deref<C>(q).*field;
+    }
 
     void SetObject(Object const &owner, Object const &value) const {
         Object &object = Deref<C>(owner).*field;
-        if (object.Exists()) object.RemovedFromContainer(owner);
+        if (object.Exists()) {
+            object.RemovedFromContainer(owner);
+        }
 
-        if (!value.Valid())
+        if (!value.Valid()) {
             object = Object();
-        else
+        } else {
             (object = value).AddedToContainer(owner);
+        }
     }
 
-    void SetMarked(Object &Q, bool B) {
-        MarkObjectAndChildren(Deref<C>(Q).*field, B);
+    void SetMarked(Object& q, bool b)
+    {
+        MarkObjectAndChildren(Deref<C>(q).*field, b);
     }
 };
 
 // accessor to non-system properties_
 template <class Class, class C, bool, class T, class = T>
 struct Accessor : NonSystemProperty<AccessorBase, C, T, T(Class::*)> {
-    typedef NonSystemProperty<AccessorBase, C, T, T(Class::*)> Parent;
+    using Parent = NonSystemProperty<AccessorBase, C, T, T(Class::*)>;
     using Parent::field;
     using typename Parent::Field;
 
-    Accessor(Field F, Label const &L, MemberCreateParams::Enum createParams)
-        : NonSystemProperty<AccessorBase, C, T, T(Class::*)>(F, L,
-                                                             createParams) {}
+    Accessor(Field f, Label const& l, member_create_params::Enum createParams)
+        : NonSystemProperty<AccessorBase, C, T, T(Class::*)>(f, l, createParams)
+    {
+    }
 
-    Object GetValue(Object const &object) const {
+    [[nodiscard]] Object GetValue(Object const& object) const
+    {
         return object.GetRegistry()->New(ConstDeref<C>(object).*field);
     }
 };
@@ -92,14 +107,17 @@ struct Accessor : NonSystemProperty<AccessorBase, C, T, T(Class::*)> {
 template <class Class, class C, class T, class S>
 struct Accessor<Class, C, true, T, S>
     : SystemProperty<AccessorBase, C, T, S(Class::*)> {
-    typedef SystemProperty<AccessorBase, C, T, S(Class::*)> Parent;
+    using Parent = SystemProperty<AccessorBase, C, T, S(Class::*)>;
     using Parent::field;
     using typename Parent::Field;
 
-    Accessor(Field F, Label const &L, MemberCreateParams::Enum createParams)
-        : SystemProperty<AccessorBase, C, T, S(Class::*)>(F, L, createParams) {}
+    Accessor(Field f, Label const& l, member_create_params::Enum createParams)
+        : SystemProperty<AccessorBase, C, T, S(Class::*)>(f, l, createParams)
+    {
+    }
 
-    Object GetValue(Object const &object) const {
+    [[nodiscard]] Object GetValue(Object const& object) const
+    {
         return ConstDeref<C>(object).*field;
     }
 };
@@ -107,15 +125,17 @@ struct Accessor<Class, C, true, T, S>
 // mutator for non-system types
 template <class K, class Class, bool, class T, class S>
 struct Mutator : NonSystemProperty<MutatorBase, K, T, T(Class::*)> {
-    typedef NonSystemProperty<MutatorBase, K, T, T(Class::*)> Parent;
+    using Parent = NonSystemProperty<MutatorBase, K, T, T(Class::*)>;
     using Parent::field;
     using typename Parent::Field;
 
-    Mutator(Field F, Label const &L, MemberCreateParams::Enum createParams)
-        : NonSystemProperty<MutatorBase, K, T, T(Class::*)>(F, L,
-                                                            createParams) {}
+    Mutator(Field f, Label const& l, member_create_params::Enum createParams)
+        : NonSystemProperty<MutatorBase, K, T, T(Class::*)>(f, l, createParams)
+    {
+    }
 
-    Object GetValue(Object const &object) const {
+    [[nodiscard]] Object GetValue(Object const& object) const
+    {
         return object.GetRegistry()->New(ConstDeref<K>(object).*field);
     }
 
@@ -128,30 +148,36 @@ struct Mutator : NonSystemProperty<MutatorBase, K, T, T(Class::*)> {
 template <class K, class Class, class T, class S>
 struct Mutator<K, Class, true, T, S>
     : SystemProperty<MutatorBase, K, T, S(Class::*)> {
-    typedef SystemProperty<MutatorBase, K, T, S(Class::*)> Parent;
-    typedef typename Parent::Field Field;
+    using Parent = SystemProperty<MutatorBase, K, T, S(Class::*)>;
+    using Field = typename Parent::Field;
     using Parent::field;
 
-    Mutator(Field field, Label const &label,
-            MemberCreateParams::Enum createParams)
-        : SystemProperty<MutatorBase, K, T, S(Class::*)>(field, label,
-                                                         createParams) {}
-
-    Object GetValue(Object const &Q) const {
-        return ConstDeref<K>(Q).*
-               field;  // just return the object for system types
+    Mutator(Field field, Label const& label, member_create_params::Enum createParams)
+        : SystemProperty<MutatorBase, K, T, S(Class::*)>(field, label, createParams)
+    {
     }
 
-    void SetValue(Object const &Q, Object const &V) const {
-        Object object = Deref<K>(Q).*field;  // get the containing object
+    [[nodiscard]] Object GetValue(Object const& q) const
+    {
+        return ConstDeref<K>(q).*field; // just return the object for system types
+    }
+
+    void SetValue(Object const& q, Object const& v) const
+    {
+        if (!v.Exists()) {
+            // Property was unset on the original object -- leave it unset here too.
+            return;
+        }
+
+        Object object = Deref<K>(q).*field; // get the containing object
         if (!object.Exists()) {
-            Deref<K>(Q).*field = Q.GetRegistry()->New(ConstDeref<T>(V));
+            Deref<K>(q).*field = q.GetRegistry()->New(ConstDeref<T>(v));
             return;
         }
 
         object.Assign(object.GetStorageBase(),
-                      V.GetStorageBase());  // use the class system to perform
-                                            // the assignment
+                      v.GetStorageBase()); // use the class system to perform
+                                           // the assignment
     }
 };
 
@@ -163,15 +189,15 @@ template <class K, class C, class T>
 struct MakeAccessor
     : Accessor<K, C, TypeInfo<T>::IsSytem, typename TypeInfo<T>::ValueType,
                typename TypeInfo<T>::StorageType> {
-    typedef Accessor<K, C, TypeInfo<T>::IsSytem,
-                     typename TypeInfo<T>::ValueType,
-                     typename TypeInfo<T>::StorageType>
-        Parent;
-    typedef typename Parent::Field Field;
+    using Parent =
+        Accessor<K, C, TypeInfo<T>::IsSytem, typename TypeInfo<T>::ValueType, typename TypeInfo<T>::StorageType>;
+    using Field = typename Parent::Field;
 
-    MakeAccessor(Field F, Label const &L, MemberCreateParams::Enum createParams)
-        : Accessor<K, C, TypeInfo<T>::IsSytem, typename TypeInfo<T>::ValueType,
-                   typename TypeInfo<T>::StorageType>(F, L, createParams) {}
+    MakeAccessor(Field f, Label const& l, member_create_params::Enum createParams)
+        : Accessor<K, C, TypeInfo<T>::IsSytem, typename TypeInfo<T>::ValueType, typename TypeInfo<T>::StorageType>(
+              f, l, createParams)
+    {
+    }
 };
 
 // make a mutator (read-write) property
@@ -179,14 +205,15 @@ template <class K, class C, class T>
 struct MakeMutator
     : Mutator<K, C, TypeInfo<T>::IsSytem, typename TypeInfo<T>::ValueType,
               typename TypeInfo<T>::StorageType> {
-    typedef Mutator<K, C, TypeInfo<T>::IsSytem, typename TypeInfo<T>::ValueType,
-                    typename TypeInfo<T>::StorageType>
-        Parent;
-    typedef typename Parent::Field Field;
+    using Parent =
+        Mutator<K, C, TypeInfo<T>::IsSytem, typename TypeInfo<T>::ValueType, typename TypeInfo<T>::StorageType>;
+    using Field = typename Parent::Field;
 
-    MakeMutator(Field F, Label const &L, MemberCreateParams::Enum createParams)
-        : Mutator<K, C, TypeInfo<T>::IsSytem, typename TypeInfo<T>::ValueType,
-                  typename TypeInfo<T>::StorageType>(F, L, createParams) {}
+    MakeMutator(Field f, Label const& l, member_create_params::Enum createParams)
+        : Mutator<K, C, TypeInfo<T>::IsSytem, typename TypeInfo<T>::ValueType, typename TypeInfo<T>::StorageType>(
+              f, l, createParams)
+    {
+    }
 };
 }  // namespace property_detail
 

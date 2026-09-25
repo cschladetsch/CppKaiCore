@@ -2,6 +2,8 @@
 
 #include <KAI/Core/Type/Number.h>
 
+#include <utility>
+
 #include "KAI/Core/BasePointer.h"
 #include "KAI/Core/Object/Label.h"
 #include "KAI/Core/Object/MemberCreateParams.h"
@@ -12,52 +14,61 @@ KAI_BEGIN
 /// nominates a field in an instance of a class. commonality for all accessors
 /// and mutators.
 class PropertyBase {
-    Type::Number class_type;
-    Type::Number field_type;
-    Label field_name;
+    Type::Number classType_;
+    Type::Number fieldType_;
+    Label fieldName_;
 
     /// True if this field is an Object or a Pointer<T> or convertable to either
-    bool is_system;
+    bool isSystem_;
 
-    int create_params;
+    int createParams_;
 
-   public:
-    PropertyBase(Label const &F, Type::Number C, Type::Number N, bool B,
-                 MemberCreateParams::Enum CP)
-        : field_name(F),
-          class_type(C),
-          field_type(N),
-          is_system(B),
-          create_params(CP) {}
+public:
+    PropertyBase(Label f, Type::Number c, Type::Number n, bool b, member_create_params::Enum cp)
+        : fieldName_(std::move(f)), classType_(c), fieldType_(n), isSystem_(b), createParams_(cp)
+    {
+    }
 
-    virtual ~PropertyBase() {}
+    virtual ~PropertyBase() = default;
 
-    String Description;
+    String description;
 
     /// true if field is an Object or Pointer<T>
-    bool IsSystemType() const { return is_system; }
+    [[nodiscard]] bool IsSystemType() const
+    {
+        return isSystem_;
+    }
 
     /// if true, this property should be created when its containing object is
     /// created
-    bool CreateDefaultValue() const {
-        return (create_params & MemberCreateParams::Create) ==
-               MemberCreateParams::Create;
+    [[nodiscard]] bool CreateDefaultValue() const
+    {
+        return (createParams_ & member_create_params::Create) == member_create_params::Create;
     }
 
     virtual void SetMarked(Object &, bool) = 0;
 
-    virtual Object GetValue(Object const &) const = 0;
+    [[nodiscard]] virtual Object GetValue(Object const&) const = 0;
     virtual void SetValue(Object const &, Object const &) const = 0;
 
-    virtual void SetObject(Object const &Q, Object const &V) const = 0;
-    virtual Object GetObject(Object const &Q) const = 0;
+    virtual void SetObject(Object const& q, Object const& v) const = 0;
+    [[nodiscard]] virtual Object GetObject(Object const& q) const = 0;
 
-    Label const &GetFieldName() const { return field_name; }
-    Type::Number GetClassTypeNumber() const { return class_type; }
-    Type::Number GetFieldTypeNumber() const { return field_type; }
+    [[nodiscard]] Label const& GetFieldName() const
+    {
+        return fieldName_;
+    }
+    [[nodiscard]] Type::Number GetClassTypeNumber() const
+    {
+        return classType_;
+    }
+    [[nodiscard]] Type::Number GetFieldTypeNumber() const
+    {
+        return fieldType_;
+    }
 };
 
-StringStream &operator<<(StringStream &S, BasePointer<PropertyBase> const &);
+StringStream& operator<<(StringStream& s, BasePointer<PropertyBase> const&);
 
 KAI_TYPE_TRAITS(BasePointer<PropertyBase>, Number::Property,
                 Properties::StringStreamInsert);

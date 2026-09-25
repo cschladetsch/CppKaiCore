@@ -28,8 +28,7 @@ KAI_BEGIN
 // T = the type
 // N = the number from ::kai::Type::Number
 // P = operations allowed on the type
-#define KAI_TYPE_TRAITS(T, N, Ops) \
-    KAI_TYPE_TRAITS_NAMED(T, N, #T, Ops | ::kai::Type::Properties::Assign)
+#define KAI_TYPE_TRAITS(T, N, Ops) KAI_TYPE_TRAITS_NAMED(T, N, #T, (Ops) | ::kai::Type::Properties::Assign)
 
 #define KAI_TYPE_TRAITS_BASIC(T, N) KAI_TYPE_TRAITS(T, N, 0)
 

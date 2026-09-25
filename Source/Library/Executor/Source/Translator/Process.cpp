@@ -1,4 +1,4 @@
-#include "KAI/Language/Common/Process.h"
+﻿#include "KAI/Language/Common/Process.h"
 
 #include <cstdarg>
 
@@ -7,8 +7,8 @@ using namespace std;
 KAI_BEGIN
 
 bool Process::Fail(const string &err) const {
-    Failed = true;
-    Error = err;
+    failed = true;
+    error = err;
 
     return false;
 }

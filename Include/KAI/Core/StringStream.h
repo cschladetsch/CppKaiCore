@@ -20,36 +20,51 @@ struct Trace;
 // and be addressed over a Network::Domain.
 class StringStream {
    public:
-    typedef String::Char Char;
-    typedef std::vector<Char> Storage;
+       using Char = String::Char;
+       using Storage = std::vector<Char>;
 
    private:
-    Storage stream;
-    int read_offset;
-    Registry *registry;
+       Storage stream_;
+       int readOffset_;
+       Registry* registry_;
 
    public:
-    StringStream() : read_offset(0), registry(0) {}
-    explicit StringStream(String const &S) : read_offset(0), registry(0) {
-        Append(S);
+       StringStream() : readOffset_(0), registry_(nullptr) {}
+       explicit StringStream(String const& s) : readOffset_(0), registry_(nullptr)
+       {
+           Append(s);
+       }
+
+       [[nodiscard]] const Storage& GetStorage() const
+       {
+           return stream_;
+       }
+       [[nodiscard]] String ToString() const;
+       [[nodiscard]] bool Empty() const
+       {
+           return stream_.empty();
+       }
+       [[nodiscard]] int Size() const
+       {
+           return static_cast<int>(stream_.size());
+       }
+    void Clear() {
+        stream_.clear();
     }
+    [[nodiscard]] bool CanRead(int = 1) const;
 
-    const Storage &GetStorage() const { return stream; }
-    String ToString() const;
-    bool Empty() const { return stream.empty(); }
-    int Size() const { return (int)stream.size(); }
-    void Clear() { stream.clear(); }
-    bool CanRead(int = 1) const;
-
-    void SetRegistry(Registry *R) { registry = R; }
+    void SetRegistry(Registry* r)
+    {
+        registry_ = r;
+    }
     void Append(Char);
     void Append(std::string_view);
-    void Append(std::string_view A, std::string_view B);
+    void Append(std::string_view a, std::string_view b);
     void Append(const String &);
 
     bool Extract(int length, String &);
     bool Extract(Char &);
-    char Peek() const;
+    [[nodiscard]] char Peek() const;
 
     static void Register(Registry &);
 
@@ -65,10 +80,11 @@ void Ends(EndsArgument);
 StringStream &operator<<(StringStream &, void (*)(EndsArgument));
 StringStream &operator<<(StringStream &, const String::Char *);
 
-inline StringStream &operator<<(StringStream &S, const String &T) {
-    return S << T.c_str();
+inline StringStream& operator<<(StringStream& s, const String& t)
+{
+    return s << t.CStr();
 }
-std::ostream &operator<<(std::ostream &S, const StringStream &T);
-std::istream &operator>>(std::istream &S, StringStream &T);
+std::ostream& operator<<(std::ostream& s, const StringStream& t);
+std::istream& operator>>(std::istream& s, StringStream& t);
 
 KAI_END
