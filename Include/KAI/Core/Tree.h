@@ -8,7 +8,7 @@ KAI_BEGIN
 
 class Tree {
    public:
-       using SearchPathA = std::list<Object>;
+       using SearchPath = std::list<Object>;
 
    private:
     SearchPath path_;

@@ -192,8 +192,8 @@ namespace boost {
 #define GET16BITS(d) (*((const unsigned short*) (d)))
 #endif
 
-#ifndef get16bits
-#define get16bits(d)                                      \
+#ifndef GET16BITS
+#define GET16BITS(d)                                      \
     ((((size_t)(((const unsigned char *)(d))[1])) << 8) + \
      (size_t)(((const unsigned char *)(d))[0]))
 #endif
@@ -244,5 +244,5 @@ inline size_t HashValue(KAI_NAMESPACE(String) const& string)
     hash += hash >> 6;
     return hash;
 }
-#undef get16bits
+#undef GET16BITS
 }  // namespace boost

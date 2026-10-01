@@ -141,7 +141,7 @@ class LexerCommon : public LexerBase {
    public:
     static std::string CreateErrorMessage(Token tok, const char *fmt, ...) {
         char buff0[4096];
-        va_list ap = nullptr;
+        va_list ap;
         va_start(ap, fmt);
 #ifdef WIN32
         vsprintf_s(buff0, sizeof(buff0), fmt, ap);

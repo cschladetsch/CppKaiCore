@@ -12,8 +12,8 @@ namespace detail {
 #define GET16BITS(d) (*((const unsigned short*) (d)))
 #endif
 
-#ifndef get16bits
-#define get16bits(d)                                      \
+#ifndef GET16BITS
+#define GET16BITS(d)                                      \
     ((((size_t)(((const unsigned char *)(d))[1])) << 8) + \
      (size_t)(((const unsigned char *)(d))[0]))
 #endif
@@ -76,6 +76,6 @@ struct LabelHash {
 };
 }  // namespace detail
 
-#undef get16bits
+#undef GET16BITS
 
 KAI_END
