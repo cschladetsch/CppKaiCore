@@ -28,8 +28,9 @@ class ParserCommon : public ProcessCommon {
 
     virtual bool Process(std::shared_ptr<Lexer> lex, Structure st) = 0;
 
+    /// The message from the first Fail() (ProcessCommon::error).
     const std::string &GetError() const {
-        return error_;
+        return error;
     }
     AstNodePtr GetRoot() const {
         return root_;
@@ -88,7 +89,6 @@ class ParserCommon : public ProcessCommon {
     std::vector<AstNodePtr> stack_;
     size_t current;
     AstNodePtr root_;
-    std::string error_;
     int indent;
     std::shared_ptr<Lexer> lexer_;
 
