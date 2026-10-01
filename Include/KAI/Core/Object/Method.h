@@ -24,7 +24,7 @@ struct MethodConst : ConstMethodBase<R (T::*)(Args...) const> {
     std::tuple<std::decay_t<Args>...> args;
     static int constexpr kArity = (int) sizeof...(Args);
 
-    MethodConst(MethodType m, const Label& n) : meth(m), Parent(m, n) {}
+    MethodConst(MethodType m, const Label& n) : meth(m), Parent(m, n) { this->template SetSignature<T, R, Args...>(); }
 
     void ConstInvoke(const Object &servant, Stack &stack) {
         if constexpr (kArity > 0) {
@@ -42,7 +42,7 @@ struct VoidMethodConst : ConstMethodBase<void (T::*)(Args...) const> {
     static std::size_t constexpr kArity = sizeof...(Args);
     MethodType meth;
     tuple<std::decay_t<Args>...> args;
-    VoidMethodConst(MethodType mb, const Label& n) : meth(mb), Parent(mb, n) {}
+    VoidMethodConst(MethodType mb, const Label& n) : meth(mb), Parent(mb, n) { this->template SetSignature<T, void, Args...>(); }
 
     void ConstInvoke(const Object &servant, Stack &stack) {
         if constexpr (kArity > 0) {
@@ -61,7 +61,7 @@ struct VoidMethod : MutatingMethodBase<void (T::*)(Args...)> {
     MethodType meth;
     std::tuple<std::decay_t<Args>...> args;
 
-    VoidMethod(MethodType m, const Label& n) : meth(m), Parent(m, n) {}
+    VoidMethod(MethodType m, const Label& n) : meth(m), Parent(m, n) { this->template SetSignature<T, void, Args...>(); }
 
     void NonConstInvoke(const Object &servant, Stack &stack) override {
         if constexpr (kArity > 0) {
@@ -80,7 +80,7 @@ struct Method : MutatingMethodBase<R (T::*)(Args...)> {
     MethodType meth;
     std::tuple<std::decay_t<Args>...> args;
 
-    Method(MethodType m, const Label& n) : meth(m), Parent(m, n) {}
+    Method(MethodType m, const Label& n) : meth(m), Parent(m, n) { this->template SetSignature<T, R, Args...>(); }
 
     void NonConstInvoke(const Object &servant, Stack &stack) override {
         if constexpr (kArity > 0) {

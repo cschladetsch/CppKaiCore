@@ -1,6 +1,7 @@
 #pragma once
 
 #include <KAI/Core/BuiltinTypes/Stack.h>
+#include <KAI/Core/BuiltinTypes/Void.h>
 #include <KAI/Core/Config/Base.h>
 
 #include "KAI/Core/CallableBase.h.notused"
@@ -11,7 +12,7 @@ KAI_BEGIN
 /// Common for all methods_ that return void or not, and are const or not
 class MethodBase : public CallableBase<MethodBase> {
    public:
-       Type::Number classType;
+       Type::Number classType = Type::Number::Undefined;
        Constness constness;
        MethodBase(Constness c, const Label& n) : constness(c), CallableBase<MethodBase>(n) {}
 
@@ -41,6 +42,17 @@ class MethodBase : public CallableBase<MethodBase> {
     [[nodiscard]] Object GetArgumentTypesArray() const;
     [[nodiscard]] String ToString() const;
     static void Register(Registry &);
+
+   protected:
+    /// Record the static signature of the bound C++ member function so that
+    /// front-ends (e.g. a Rho type checker, the ImGui inspector) can query it.
+    template <class T, class R, class... Args>
+    void SetSignature()
+    {
+        classType = Type::Traits<T>::Number;
+        returnType_ = Type::Traits<R>::Number;
+        arguments_ = {Type::Number(Type::Traits<std::decay_t<Args>>::Number)...};
+    }
 };
 
 template <class Method>
