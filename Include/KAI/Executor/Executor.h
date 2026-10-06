@@ -232,6 +232,9 @@ protected:
     void Push(Stack& l, Object const& q);
     Object Pop(Stack &stack);
     void NextContinuation();
+    // NextContinuation after break_, also leaving the function around an
+    // inline block whose Return is being honoured. Stops at `stopAt`.
+    void LeaveAfterBreak(Handle stopAt = Handle(0));
 
     void DumpStack(Stack const &);
     static void DumpContinuation(Continuation const &, int);
@@ -264,6 +267,10 @@ private:
     bool loopBreak_ = false;  // Set ONLY by Operation::Break; survives drain-loop resets so WhileLoop can observe a genuine loop break even after an intervening function call (Suspend/Return share break_, which is expected to be absorbed mid-drain - loopBreak_ is not).
     bool returning_ = false;  // set by Return; survives drain resets
     bool replace_;    // Set by Replace operation to replace current continuation
+    // Inline blocks (if/else bodies run by ExecuteContinuationInline) that
+    // were left half-run because they called a function, and so are resumed
+    // later from the context stack like an ordinary continuation.
+    HandleSet inlineBlocks_;
     Tree *tree_;
     int traceLevel_;
     int stepNumber_;

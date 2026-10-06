@@ -639,6 +639,7 @@ void Executor::ContinueOneInstruction() {
     
     try {
         if (!continuation_->Next(next)) {
+            inlineBlocks_.erase(continuation_.GetHandle());
             NextContinuation();
             return;
         }
@@ -658,7 +659,7 @@ void Executor::ContinueOneInstruction() {
         }
         
         if (break_) {
-            NextContinuation();
+            LeaveAfterBreak();
             return;
         }
         
@@ -802,6 +803,21 @@ void Executor::Continue(Value<Continuation> C) {
         continuation_ = savedContinuation;
     } else {
         continuation_ = Object();
+    }
+}
+
+void Executor::LeaveAfterBreak(Handle stopAt) {
+    const bool returning = returning_;
+    Handle from = continuation_.Exists() ? continuation_.GetHandle() : Handle(0);
+    NextContinuation();
+    // A Return in an if/else block that was resumed from the context stack
+    // (because the block called a function) has just landed back in the
+    // function containing the block. The Return belongs to that function,
+    // so leave it too - and any enclosing inline blocks on the way out.
+    while (returning && inlineBlocks_.erase(from) && continuation_.Exists() &&
+           continuation_.GetHandle() != stopAt) {
+        from = continuation_.GetHandle();
+        NextContinuation();
     }
 }
 

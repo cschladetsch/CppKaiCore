@@ -2650,7 +2650,12 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
         }
     }
 
+    if (inlineCont.Exists()) inlineBlocks_.insert(inlineCont.GetHandle());
     executeInline(inlineCont, true);
+    // Finished inline: nothing will resume it from the context stack. If it
+    // called a function instead (replace_), it is resumed later and
+    // LeaveAfterBreak needs to know it was an inline block.
+    if (inlineCont.Exists() && !replace_) inlineBlocks_.erase(inlineCont.GetHandle());
 }
 
 
@@ -2707,6 +2712,24 @@ void Executor::ExecuteContinuationInlineAndDrain(Pointer<Continuation> cont) {
             continue;
         }
         Eval(next);
+
+        // A Return (or Break) inside a nested block - for example the `if`
+        // in `if n < 2: return false`, which If runs inline - leaves break_
+        // set when Eval comes back. Leave the current continuation now, as
+        // ContinueOneInstruction does, instead of clearing break_ at the top
+        // of the next iteration and carrying on after the `if`.
+        // (`...` has already cleared the context and continuation_ and wants
+        // returning_ to unwind every loop, so leave that case alone.)
+        if (break_ && !replace_ && continuation_.Exists()) {
+            const bool wasReturning = returning_;
+            LeaveAfterBreak(outerHandle);  // clears break_ and returning_
+            // Back at the outer continuation means the Return came from the
+            // loop body itself, not from a function it called, so the
+            // enclosing loop still has to unwind.
+            if (continuation_.Exists() && continuation_.GetHandle() == outerHandle) {
+                returning_ = wasReturning;
+            }
+        }
     }
     if (!continuation_.Exists()) continuation_ = outer;  // `...` nulled it; keep a valid current continuation
     replace_ = false;

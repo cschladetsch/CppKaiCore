@@ -411,6 +411,29 @@ graph TB
 5 1 fact & // Stack stays constant at depth 1, result: 120
 ```
 
+### Returns from Inline Blocks
+
+`If` and `IfElse` run their block inline with `ExecuteContinuationInline`
+rather than suspending into it, and the loop operations (`WhileLoop`,
+`ForLoop`, `DoLoop`, `ForEach`) run their bodies through
+`ExecuteContinuationInlineAndDrain`. A `Return` inside such a block must
+still leave the *function* that contains it:
+
+- When the block runs to completion inline, `break_` and `returning_` unwind
+  it directly.
+- When the block calls a function, `Suspend` pushes the half-run block on the
+  context stack and the block is resumed later like any continuation. The
+  executor records it in `inlineBlocks_` while it is pending, and
+  `LeaveAfterBreak` uses that to leave the enclosing function as well when
+  the `Return` comes out of the block.
+- The drain loop leaves the current continuation as soon as `break_` is set,
+  as `ContinueOneInstruction` does, and stops at the loop body's own caller;
+  if the `Return` came from the loop body itself, `returning_` stays set so
+  the C++ loop unwinds.
+
+Without this, `if n > 1: return n * fact(n - 1)` returned from the `if`
+only. The CppKAI tests `RhoEarlyReturnInLoop.*` cover these paths.
+
 ## Memory Management Integration
 
 The Executor integrates seamlessly with KAI's garbage collector:
