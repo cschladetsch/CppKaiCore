@@ -2532,7 +2532,7 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
     std::function<void(Pointer<Continuation>, bool)> executeInline;
     executeInline = [this, &executeInline](Pointer<Continuation> cont,
                                            bool pushContext) {
-        std::cerr << "[ECI-lambda] enter cont.Exists()=" << cont.Exists() << std::endl;
+        KAI_VERBOSE() << "[ECI-lambda] enter cont.Exists()=" << cont.Exists();
         if (!cont.Exists() || !cont->GetCode().Exists()) {
             return;
         }
@@ -2578,7 +2578,7 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
                 auto obj = cont->GetCode()->At(index);
                 *cont->index = index + 1;
 
-                std::cerr << "[ECI-loop] index=" << index << " obj.Exists()=" << obj.Exists() << std::endl;
+                KAI_VERBOSE() << "[ECI-loop] index=" << index << " obj.Exists()=" << obj.Exists();
 
                 if (!obj.Exists()) continue;
 
@@ -2638,9 +2638,9 @@ void Executor::ExecuteContinuationInline(Pointer<Continuation> cont) {
     if (cont.Exists()) {
         bool hadScope = cont->GetScope().Exists();
         Value<Continuation> orig = cont;
-        std::cerr << "[ECI-outer] after orig=cont OK, orig.Valid()=" << orig.Valid() << " orig.Exists()=" << orig.Exists() << std::endl;
+        KAI_VERBOSE() << "[ECI-outer] after orig=cont OK, orig.Valid()=" << orig.Valid() << " orig.Exists()=" << orig.Exists();
         inlineCont = NewContinuation(orig);
-        std::cerr << "[ECI-outer] after NewContinuation, inlineCont.Exists()=" << inlineCont.Exists() << std::endl;
+        KAI_VERBOSE() << "[ECI-outer] after NewContinuation, inlineCont.Exists()=" << inlineCont.Exists();
         if (inlineCont.Exists()) {
             if (hadScope) {
                 inlineCont->SetScope(cont->GetScope());
@@ -2677,19 +2677,18 @@ void Executor::ExecuteContinuationInlineAndDrain(Pointer<Continuation> cont) {
 
     ExecuteContinuationInline(cont);
 
-    std::cerr << "[Drain3] entry: continuation_.Exists()=" << continuation_.Exists()
+    KAI_VERBOSE() << "[Drain3] entry: continuation_.Exists()=" << continuation_.Exists()
               << " ==outer=" << (continuation_.Exists() ? (continuation_.GetHandle() == outerHandle) : false)
               << " code.Exists()=" << (continuation_.Exists() ? continuation_->GetCode().Exists() : false)
               << " code.Size()=" << ((continuation_.Exists() && continuation_->GetCode().Exists()) ? continuation_->GetCode()->Size() : -1)
-              << " index=" << ((continuation_.Exists() && continuation_->index.Exists()) ? ConstDeref<int>(continuation_->index) : -1)
-              << std::endl;
+              << " index=" << ((continuation_.Exists() && continuation_->index.Exists()) ? ConstDeref<int>(continuation_->index) : -1);
     if (continuation_.Exists() && continuation_->GetCode().Exists()) {
         auto codeArr = continuation_->GetCode();
         for (int _i = 0; _i < codeArr->Size(); ++_i) {
             Object _o = codeArr->At(_i);
-            std::cerr << "[Drain5]   slot[" << _i << "] exists=" << _o.Exists() << " valid=" << _o.Valid()
+            KAI_VERBOSE() << "[Drain5]   slot[" << _i << "] exists=" << _o.Exists() << " valid=" << _o.Valid()
                        << " typeNum=" << _o.GetTypeNumber().value
-                       << " str=" << (_o.Exists() ? _o.ToString() : "<none>") << std::endl;
+                       << " str=" << (_o.Exists() ? _o.ToString() : "<none>");
         }
     }
 
@@ -2702,9 +2701,9 @@ void Executor::ExecuteContinuationInlineAndDrain(Pointer<Continuation> cont) {
         replace_ = false;
         break_ = false;
         Object next;
-        std::cerr << "[Drain4] pre-Next: code.Size()=" << continuation_->GetCode()->Size() << " index=" << ConstDeref<int>(continuation_->index) << " handle=" << continuation_.GetHandle() << std::endl;
+        KAI_VERBOSE() << "[Drain4] pre-Next: code.Size()=" << continuation_->GetCode()->Size() << " index=" << ConstDeref<int>(continuation_->index) << " handle=" << continuation_.GetHandle();
         if (!continuation_->Next(next)) {
-            std::cerr << "[Drain3] Next() false, calling NextContinuation" << std::endl;
+            KAI_VERBOSE() << "[Drain3] Next() false, calling NextContinuation";
             NextContinuation();
             continue;
         }

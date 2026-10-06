@@ -54,13 +54,13 @@ void Continuation::Enter(Executor *exec) {
         if (!scope.Exists()) scope = exec->New<void>();
 
         Stack &data = *exec->GetDataStack();
-        std::cerr << "[Enter] args.Exists()=" << args.Exists()
+        KAI_VERBOSE() << "[Enter] args.Exists()=" << args.Exists()
                    << " args.Empty()=" << (args.Exists() ? args->Empty() : true)
                    << " args.Size()=" << (args.Exists() ? args->Size() : -1)
-                   << " data.Size()=" << data.Size() << std::endl;
+                   << " data.Size()=" << data.Size();
         if (args.Exists() && !args->Empty()) {
             for (auto arg : *args) {
-                std::cerr << "[Enter]   arg label=" << ConstDeref<Label>(arg).ToString() << std::endl;
+                KAI_VERBOSE() << "[Enter]   arg label=" << ConstDeref<Label>(arg).ToString();
             }
             if (data.Size() < args->Size()) {
                 KAI_TRACE_ERROR_2(data.Size(), args->Size())
@@ -70,9 +70,9 @@ void Continuation::Enter(Executor *exec) {
 
             for (auto arg : *args) {
                 Object a = data.Pop();
-                std::cerr << "[Enter]   binding " << ConstDeref<Label>(arg).ToString() << " = " << a.ToString() << std::endl;
+                KAI_VERBOSE() << "[Enter]   binding " << ConstDeref<Label>(arg).ToString() << " = " << a.ToString();
                 scope.Set(ConstDeref<Label>(arg), a);
-                std::cerr << "[EnterRT] immediately after Set: scope.Has(same arg label)=" << scope.Has(ConstDeref<Label>(arg)) << std::endl;
+                KAI_VERBOSE() << "[EnterRT] immediately after Set: scope.Has(same arg label)=" << scope.Has(ConstDeref<Label>(arg));
             }
         }
     }

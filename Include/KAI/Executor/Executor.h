@@ -97,7 +97,7 @@ struct Executor : Reflected {
 
             // Extract the identifier from the object
             Ident const& ident = ConstDeref<Ident>(q);
-            std::cerr << "[EI1] EvalIdent name=" << ident.ToString() << " quoted=" << ident.Quoted() << std::endl;
+            KAI_VERBOSE() << "[EI1] EvalIdent name=" << ident.ToString() << " quoted=" << ident.Quoted();
 
             // For quoted identifiers, just push the original object
             if (ident.Quoted()) {

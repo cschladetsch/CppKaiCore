@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <utility>
 
@@ -21,6 +21,7 @@ struct Trace : StringStream {
         Warn,
         Error,
         Fatal,
+        Verbose,
     };
 
     // show the location of the trace, including line number
@@ -70,13 +71,22 @@ struct EmptySink {
 };
 }  // namespace debug
 
-#ifdef KAI_DEBUG_TRACE
-// Base macros with file and line information
-#define KAI_TRACE() KAI_TRACER(__FILE__, __LINE__, __FUNCTION__, Information)
-
+// A live trace on channel T. Defined unconditionally so each channel
+// (TRACE, VERBOSE) is switched by its own flag, not by KAI_DEBUG_TRACE.
 #define KAI_TRACER(F, L, N, T)  \
     KAI_NAMESPACE(debug::Trace) \
     (KAI_NAMESPACE(FileLocation)(F, L, N), KAI_NAMESPACE(debug::Trace::T))
+
+// A disabled channel. The else branch is never taken, so streamed operands
+// are never evaluated. Statement-only.
+#define KAI_DISABLED_TRACE \
+    if (true) {            \
+    } else                 \
+        KAI_NAMESPACE(debug::EmptySink)()
+
+#ifdef KAI_DEBUG_TRACE
+// Base macros with file and line information
+#define KAI_TRACE() KAI_TRACER(__FILE__, __LINE__, __FUNCTION__, Information)
 
 // Use our enhanced logger with file and line information for key log macros
 #define KAI_LOG_INFO(msg) \
@@ -123,7 +133,6 @@ struct EmptySink {
 #define KAI_EMPTY_TRACE_SINK_4(A, B, C, D) debug::EmptySink()
 
 // Define empty versions of all macros
-#define KAI_TRACER(F, L, N) KAI_EMPTY_TRACE_SINK
 #define KAI_TRACE() KAI_EMPTY_TRACE_SINK
 #define KAI_TRACE_0() KAI_EMPTY_TRACE_SINK
 #define KAI_TRACE_1(A) KAI_EMPTY_TRACE_SINK_1(A)
@@ -157,6 +166,24 @@ struct EmptySink {
 #define KAI_LOG_WARNING(msg) ((void)0)
 #define KAI_LOG_ERROR(msg) ((void)0)
 #define KAI_LOG_FATAL(msg) ((void)0)
+#endif
+
+// Verbose channel. Separate from TRACE: either, both or neither may be
+// enabled. Enable with KAI_DEBUG_VERBOSE.
+#ifdef KAI_DEBUG_VERBOSE
+#define KAI_VERBOSE() KAI_TRACER(__FILE__, __LINE__, __FUNCTION__, Verbose)
+#define KAI_VERBOSE_0() KAI_VERBOSE()
+#define KAI_VERBOSE_1(A) KAI_VERBOSE().Write(#A, A)
+#define KAI_VERBOSE_2(A, B) KAI_VERBOSE_1(A).Write(#B, B)
+#define KAI_VERBOSE_3(A, B, C) KAI_VERBOSE_2(A, B).Write(#C, C)
+#define KAI_VERBOSE_4(A, B, C, D) KAI_VERBOSE_3(A, B, C).Write(#D, D)
+#else
+#define KAI_VERBOSE() KAI_DISABLED_TRACE
+#define KAI_VERBOSE_0() KAI_DISABLED_TRACE
+#define KAI_VERBOSE_1(A) KAI_DISABLED_TRACE
+#define KAI_VERBOSE_2(A, B) KAI_DISABLED_TRACE
+#define KAI_VERBOSE_3(A, B, C) KAI_DISABLED_TRACE
+#define KAI_VERBOSE_4(A, B, C, D) KAI_DISABLED_TRACE
 #endif
 
 KAI_END
