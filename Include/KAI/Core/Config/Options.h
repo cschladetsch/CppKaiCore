@@ -11,7 +11,7 @@
 #endif
 
 //  use lots of extra info in trace mesages
-// #define KAI_TRACE_VERBOSE
+// #define KAI_DEBUG_VERBOSE
 
 // generally more safety and checking
 // #define KAI_DEBUG
