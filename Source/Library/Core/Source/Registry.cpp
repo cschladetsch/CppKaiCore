@@ -7,12 +7,15 @@
 #include <KAI/Core/TriColor.h>
 
 #include <cassert>
+#include <limits>
 #include <set>
 #include <utility>
 
 #define KAI_USE_TRICOLOR
 
 KAI_BEGIN
+
+static void RemoveFromSet(Registry::ColoredSet &handles, Handle handle);
 
 Registry::Registry() {
     allocator_ = std::make_shared<memory::StandardAllocator>();
@@ -465,11 +468,145 @@ void MarkObjectAndChildren(StorageBase &storage, bool marked) {
 
 void Registry::GarbageCollect(Object root) {
 #ifdef KAI_USE_TRICOLOR
+    // Same per-call work bound as TriColor()'s MaxCycles: the cycle trace
+    // visits at most this many objects per GarbageCollect().
+    constexpr int CycleTraceBudget = 17;
+
     AddRoot(root);
     TriColor();
+    StepCycleTrace(CycleTraceBudget);
 #else
     MarkSweepAndDestroy(root_);
 #endif
+}
+
+void Registry::BeginCycleTrace() {
+    cycleTraceActive_ = true;
+    cycleTraceLimit_ = Handle(nextHandle_.GetValue());
+    cycleTraced_.clear();
+    cycleTraceQueue_.clear();
+    cycleTraceEdges_.clear();
+
+    // Forward edges come from each object's containers_ back-references.
+    // Every way of holding an object (dictionary child, property, container
+    // element) registers there via AddedToContainer(), and it is the same
+    // bookkeeping TriColor() relies on, so both collectors agree on what
+    // "referenced" means. Taken as a snapshot: edges added during the trace
+    // are caught by CycleTraceBarrier(); edges removed during it only make
+    // the trace conservative.
+    for (auto const &[handle, base] : instances_) {
+        if (base == nullptr) continue;
+        for (auto const container : base->GetContainers())
+            cycleTraceEdges_[container].push_back(handle);
+    }
+
+    for (auto const &root : roots)
+        if (root.Exists()) cycleTraceQueue_.push_back(root.GetHandle());
+
+    if (tree_ != nullptr && tree_->GetRoot().Exists())
+        cycleTraceQueue_.push_back(tree_->GetRoot().GetHandle());
+
+    // Unmanaged objects (including NewRetained) are owned by the host, so
+    // they and everything they reference are live by definition.
+    for (auto const &[handle, base] : instances_)
+        if (base != nullptr && !base->IsManaged())
+            cycleTraceQueue_.push_back(handle);
+}
+
+void Registry::CycleTraceBarrier(Handle container, Handle child) {
+    if (!cycleTraceActive_) return;
+    if (cycleTraced_.contains(child)) return;
+
+    // Dijkstra insertion barrier. An edge from an object the trace has
+    // already visited would otherwise never be followed, so visit the child
+    // directly. An edge from an unvisited object only needs recording so it
+    // is followed when that object is visited; this keeps the barrier's cost
+    // bounded by the number of new edges, not by how long a trace stays open.
+    if (cycleTraced_.contains(container))
+        cycleTraceQueue_.push_back(child);
+    else
+        cycleTraceEdges_[container].push_back(child);
+}
+
+void Registry::CycleTraceRoot(Handle root) {
+    if (!cycleTraceActive_) return;
+    if (!cycleTraced_.contains(root)) cycleTraceQueue_.push_back(root);
+}
+
+bool Registry::StepCycleTrace(int budget) {
+    if (!cycleTraceActive_) BeginCycleTrace();
+
+    for (int visited = 0; visited < budget;) {
+        if (cycleTraceQueue_.empty()) {
+            FinishCycleTrace();
+            return true;
+        }
+
+        const Handle handle = cycleTraceQueue_.back();
+        cycleTraceQueue_.pop_back();
+        if (!cycleTraced_.insert(handle).second) continue;
+
+        StorageBase *base = GetStorageBase(handle);
+        if (base == nullptr) continue;
+        ++visited;
+
+        if (auto const edges = cycleTraceEdges_.find(handle);
+            edges != cycleTraceEdges_.end()) {
+            for (auto const child : edges->second)
+                if (!cycleTraced_.contains(child))
+                    cycleTraceQueue_.push_back(child);
+        }
+
+        // Dictionary children are also registered as containers_ edges, but
+        // walk them directly too so a child set before this trace began and
+        // never registered (e.g. via a path that bypasses Set()) is not lost.
+        for (auto const &[_, child] : base->GetDictionary())
+            if (child.Exists() && !cycleTraced_.contains(child.GetHandle()))
+                cycleTraceQueue_.push_back(child.GetHandle());
+    }
+
+    return false;
+}
+
+void Registry::FinishCycleTrace() {
+    // Reclaim only what the eager collector provably cannot: managed objects
+    // that are not white (white ones are already TriColor()'s to release),
+    // still have at least one container referring to them, and yet were not
+    // reached from any root. That is exactly an unreachable cycle, or a
+    // structure hanging off one. Objects held only from C++ have no
+    // containers and are deliberately left alone.
+    std::vector<Handle> garbage;
+    for (auto const &[handle, base] : instances_) {
+        if (base == nullptr) continue;
+        if (cycleTraceLimit_ < handle) continue;
+        if (cycleTraced_.contains(handle)) continue;
+        if (!base->IsManaged() || base->IsWhite()) continue;
+        if (base->GetContainers().empty()) continue;
+
+        garbage.push_back(handle);
+    }
+
+    cycleTraceActive_ = false;
+    cycleTraced_.clear();
+    cycleTraceQueue_.clear();
+    cycleTraceEdges_.clear();
+
+    for (auto const handle : garbage) {
+        RemoveFromSet(grey_, handle);
+        RemoveFromSet(white_, handle);
+        DestroyObject(handle);
+    }
+
+    if (gcTraceLevel >= 1 && !garbage.empty())
+        KAI_TRACE() << "CycleTrace: reclaimed " << static_cast<int>(garbage.size());
+}
+
+void Registry::CollectCycles() {
+    // Start fresh so the result reflects the graph as it is now, not as it
+    // was when an earlier incremental trace began.
+    cycleTraceActive_ = false;
+    while (!StepCycleTrace(std::numeric_limits<int>::max())) {
+    }
 }
 
 void Registry::TriColor() {
@@ -626,6 +763,7 @@ void Registry::AddRoot(Object const &root) {
         roots.push_back(root);
 
     SetColor(root.GetStorageBase(), ObjectColor::Grey);
+    CycleTraceRoot(root.GetHandle());
 }
 
 #ifdef KAI_DEBUG_REGISTRY

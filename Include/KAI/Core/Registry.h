@@ -65,6 +65,23 @@ struct Registry {
     // Track handles that couldn't be properly deleted
     std::vector<Handle> failedDeletions_;
 
+    // Backup tracing collector for garbage cycles.
+    //
+    // TriColor() keeps colours up to date eagerly from container add/remove
+    // events: an object goes white only when no black container still holds
+    // it. That never fires for a detached cycle, because every member is
+    // still held by another (black) member. The cycle trace is an incremental
+    // reachability walk from the roots that runs alongside TriColor() and
+    // reclaims objects the walk did not reach.
+    bool cycleTraceActive_{false};
+    Handle cycleTraceLimit_{0};             // newer handles are exempt
+    std::vector<Handle> cycleTraceQueue_;
+    ColoredSet cycleTraced_;
+    std::unordered_map<Handle, std::vector<Handle>, HashHandle> cycleTraceEdges_;
+
+    void BeginCycleTrace();
+    void FinishCycleTrace();
+
 public:
     Registry();
     Registry(std::shared_ptr<memory::IAllocator>);
@@ -217,6 +234,19 @@ public:
     void GarbageCollect();
     bool SetColor(StorageBase &, ObjectColor::Color);
     [[nodiscard]] bool OnDeathRow(Handle) const;
+
+    // Advance the cycle trace by at most `budget` objects. Returns true when
+    // this call completed a full trace (and reclaimed what it found).
+    bool StepCycleTrace(int budget);
+    // Run a complete cycle trace now, finishing any trace in progress.
+    void CollectCycles();
+    // Write barrier: called whenever `container` gains a reference to
+    // `child`, so an in-progress trace cannot miss an object linked behind
+    // its frontier.
+    void CycleTraceBarrier(Handle container, Handle child);
+    // A root added while a trace is in progress.
+    void CycleTraceRoot(Handle root);
+    [[nodiscard]] bool IsCycleTraceActive() const { return cycleTraceActive_; }
 
     int gcTraceLevel{};
     void SetGCTraceLevel(int);

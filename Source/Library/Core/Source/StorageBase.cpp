@@ -270,6 +270,7 @@ void StorageBase::AddedToContainer(Object const &container) {
 
     containers_.push_back(container.GetHandle());
     if (IsWhite()) SetGrey();
+    GetRegistry()->CycleTraceBarrier(container.GetHandle(), GetHandle());
 }
 
 void StorageBase::SetClean(bool clean) {
