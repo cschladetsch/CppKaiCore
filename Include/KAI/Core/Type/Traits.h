@@ -312,12 +312,34 @@ struct TraitsBase {
 
     template <class D>
     struct Contained<D, true> {
-        template <class A, class B, class C> static void SetSwitch(A /*unused*/, B /*unused*/, C /*unused*/) {}
+        // The container is taken by reference throughout: these were by-value,
+        // which copied the whole container on every call.
+        template <class A, class B, class C> static void SetSwitch(A&& /*unused*/, B /*unused*/, C /*unused*/) {}
 
-        template <class A, class B> static void SetMarked(A /*unused*/, B /*unused*/) {}
+        template <class A, class B> static void SetMarked(A&& /*unused*/, B /*unused*/) {}
 
-        template <class A, class B> static void Erase(A /*unused*/, B /*unused*/) {}
-        template <class A, class B> static void ForEachContained(A /*unused*/, B /*unused*/)
+        // Called via ClassBase::DetachFromContainer when an element is
+        // explicitly Delete()d, once per containers_ registration. Matches by
+        // handle, not value (Stack and Set Erase(Object) compare by value and
+        // could remove a different, equal object), removes one occurrence,
+        // and never throws, since it runs part way through StorageBase::Delete.
+        //
+        // Containers that never Attach their elements (MapBase) never get
+        // here; for them this is a no-op.
+        template <class A, class B> static void Erase(A& container, B const& object)
+        {
+            if constexpr (requires { container.Erase(container.Begin()); container.Begin()->GetHandle(); }) {
+                const auto handle = object.GetHandle();
+                for (auto it = container.Begin(); it != container.End(); ++it) {
+                    if (it->GetHandle() == handle) {
+                        container.Erase(it);
+                        return;
+                    }
+                }
+            }
+        }
+
+        template <class A, class B> static void ForEachContained(A&& /*unused*/, B /*unused*/)
         {
             // KAI_NOT_IMPLEMENTED();
         }
