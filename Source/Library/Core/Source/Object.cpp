@@ -132,7 +132,11 @@ void Object::SetMarked(bool B) const {
 }
 
 void Object::SetConst() const {
-    if (Exists()) GetStorageBase().SetConst();
+    // StorageBase is an Object and has no SetConst of its own, so calling
+    // GetStorageBase().SetConst() recursed into this function forever. Set
+    // the switch on the storage directly; Object::SetSwitch would not do,
+    // as it only reaches the (no-op) per-class container hook.
+    if (Exists()) GetStorageBase().SetSwitch(IObject::Const, true);
 }
 
 void Object::SetManaged(bool B) const {

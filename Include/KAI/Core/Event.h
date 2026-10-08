@@ -7,6 +7,8 @@
 #include <utility>
 
 #include "KAI/Core/BuiltinTypes/Void.h"
+#include "KAI/Core/Object/Object.h"
+#include "KAI/Core/Type/Deref.h"
 
 // DESCRIPTION
 // This file contains a definition for a multi-cast Event using modern C++23
@@ -68,11 +70,13 @@ struct FunctionDelegate : public Delegate<Args...> {
     void invoke(Args... args) override { function(args...); }
 
     bool equals(const FunctionType& other) const {
-        // std::function doesn't support comparison in C++, so we use
-        // target_type
-        return function.target_type() == other.target_type() &&
-               *function.template target<void (*)(Args...)>() ==
-                   *other.template target<void (*)(Args...)>();
+        // std::function can't compare what it holds. Plain function pointers
+        // can be recovered and compared; anything else (lambdas, functors)
+        // can't, and target<>() returns null for them, so never matches.
+        using Pointer = void (*)(Args...);
+        const auto* mine = function.template target<Pointer>();
+        const auto* theirs = other.template target<Pointer>();
+        return mine != nullptr && theirs != nullptr && *mine == *theirs;
     }
 
     FunctionType function;
@@ -113,7 +117,9 @@ struct ObjectMethodDelegate : public Delegate<Args...> {
     }
 
     bool equals(const Object& obj, MethodType meth) const {
-        return object == obj && method == meth;
+        // Identity, not Object::operator== (value equivalence): two distinct
+        // but equal objects must not be confused.
+        return object.GetHandle() == obj.GetHandle() && method == meth;
     }
 
     Object object;
@@ -166,10 +172,12 @@ class Event {
         removeObjectMethod(bound.first, bound.second);
     }
 
-    // Event invocation
+    // Event invocation. Arguments are passed as lvalues: forwarding them
+    // inside the loop moved them into the first sink and every later sink
+    // received moved-from values.
     void operator()(Args... args) const {
         for (const auto& sink : sinks) {
-            sink.second->invoke(std::forward<Args>(args)...);
+            sink.second->invoke(args...);
         }
     }
 
@@ -226,10 +234,13 @@ class Event {
         auto it = sinks.begin();
         while (it != sinks.end()) {
             if (it->first == event_detail::DelegateType::Method) {
+                // Sinks of this kind may be bound to other classes; only
+                // compare those actually bound to Class.
                 auto* methodDelegate =
-                    static_cast<event_detail::MethodDelegate<Class, Args...>*>(
+                    dynamic_cast<event_detail::MethodDelegate<Class, Args...>*>(
                         it->second.get());
-                if (methodDelegate->equals(object, method)) {
+                if (methodDelegate != nullptr &&
+                    methodDelegate->equals(object, method)) {
                     it = sinks.erase(it);
                     return;
                 }
@@ -255,10 +266,11 @@ class Event {
         auto it = sinks.begin();
         while (it != sinks.end()) {
             if (it->first == event_detail::DelegateType::ObjectMethod) {
-                auto* objectMethodDelegate = static_cast<
+                auto* objectMethodDelegate = dynamic_cast<
                     event_detail::ObjectMethodDelegate<Class, Args...>*>(
                     it->second.get());
-                if (objectMethodDelegate->equals(object, method)) {
+                if (objectMethodDelegate != nullptr &&
+                    objectMethodDelegate->equals(object, method)) {
                     it = sinks.erase(it);
                     return;
                 }
